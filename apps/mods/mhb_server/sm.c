@@ -682,7 +682,9 @@ static enum svc_state svc_connected__gear_shifted(struct svc *svc, struct svc_wo
     vdbg("\n");
 
     int err = (int)work->parameter0;
-    gearbox_shift_complete(g_svc.gearbox, err);
+    if (g_svc.gearbox) {
+        gearbox_shift_complete(g_svc.gearbox, err);
+    }
     return g_svc.state;
 }
 
