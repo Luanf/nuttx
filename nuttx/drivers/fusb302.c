@@ -591,10 +591,10 @@ static void fusb302_update_state(struct fusb302_dev_s *info)
     case USB_STATE_UNATTACHED:
         switch (new_attach) {
             case ATTACH_TYPE_NONE:
-                vdbg("unattached -> unattached\n");
+                dbg("unattached -> unattached\n");
                 break;
             case ATTACH_TYPE_SNK:
-                vdbg("unattached -> wait_snk\n");
+                dbg("unattached -> wait_snk\n");
                 info->state = USB_STATE_ATTACHED_WAIT_SNK;
                 fusb302_write_connected_snk(cc);
 
@@ -604,7 +604,7 @@ static void fusb302_update_state(struct fusb302_dev_s *info)
                 }
                 break;
             case ATTACH_TYPE_SRC:
-                vdbg("unattached -> wait_src\n");
+                dbg("unattached -> wait_src\n");
                 info->state = USB_STATE_ATTACHED_WAIT_SRC;
                 fusb302_write_connected_src(cc);
 
@@ -614,7 +614,7 @@ static void fusb302_update_state(struct fusb302_dev_s *info)
                 }
                 break;
             case ATTACH_TYPE_ACC:
-                vdbg("unattached -> acc\n");
+                dbg("unattached -> acc\n");
             default:
                 ASSERT(FALSE);
                 break;
@@ -624,18 +624,18 @@ static void fusb302_update_state(struct fusb302_dev_s *info)
     case USB_STATE_ATTACHED_WAIT_SNK:
         switch (new_attach) {
             case ATTACH_TYPE_NONE:
-                vdbg("wait_snk -> unattached\n");
+                dbg("wait_snk -> unattached\n");
                 info->state = USB_STATE_UNATTACHED;
                 fusb302_write_disconnected();
                 break;
             case ATTACH_TYPE_SNK:
-                vdbg("wait_snk -> snk\n");
+                dbg("wait_snk -> snk\n");
                 info->state = USB_STATE_ATTACHED_SNK;
                 fusb302_notify_device_usb_ext(info);
                 fusb302_notify_device_ext_power(info);
                 break;
             case ATTACH_TYPE_SRC:
-                vdbg("wait_snk -> wait_src\n");
+                dbg("wait_snk -> wait_src\n");
                 info->state = USB_STATE_ATTACHED_WAIT_SRC;
                 fusb302_write_connected_src(cc);
 
@@ -645,7 +645,7 @@ static void fusb302_update_state(struct fusb302_dev_s *info)
                 }
                 break;
             case ATTACH_TYPE_ACC:
-                vdbg("wait_snk -> acc\n");
+                dbg("wait_snk -> acc\n");
             default:
                 ASSERT(FALSE);
                 break;
@@ -655,12 +655,12 @@ static void fusb302_update_state(struct fusb302_dev_s *info)
     case USB_STATE_ATTACHED_WAIT_SRC:
         switch (new_attach) {
             case ATTACH_TYPE_NONE:
-                vdbg("wait_src -> unattached\n");
+                dbg("wait_src -> unattached\n");
                 info->state = USB_STATE_UNATTACHED;
                 fusb302_write_disconnected();
                 break;
             case ATTACH_TYPE_SNK:
-                vdbg("wait_src -> wait_snk\n");
+                dbg("wait_src -> wait_snk\n");
                 info->state = USB_STATE_ATTACHED_WAIT_SNK;
                 fusb302_write_connected_snk(cc);
 
@@ -670,7 +670,7 @@ static void fusb302_update_state(struct fusb302_dev_s *info)
                 }
                 break;
             case ATTACH_TYPE_SRC:
-                vdbg("wait_src -> src\n");
+                dbg("wait_src -> src\n");
                 info->state = USB_STATE_ATTACHED_SRC;
                 fusb302_notify_device_usb_ext(info);
                 fusb302_notify_device_ext_power(info);
@@ -678,7 +678,7 @@ static void fusb302_update_state(struct fusb302_dev_s *info)
                 gpio_set_value(info->gpio_vbus_en, 1);
                 break;
             case ATTACH_TYPE_ACC:
-                vdbg("wait_src -> acc\n");
+                dbg("wait_src -> acc\n");
             default:
                 ASSERT(FALSE);
                 break;
@@ -693,17 +693,17 @@ static void fusb302_update_state(struct fusb302_dev_s *info)
 
         switch (new_attach) {
             case ATTACH_TYPE_NONE:
-                vdbg("snk -> unattached\n");
+                dbg("snk -> unattached\n");
                 info->state = USB_STATE_UNATTACHED;
                 fusb302_write_disconnected();
                 fusb302_notify_device_usb_ext(info);
                 fusb302_notify_device_ext_power(info);
                 break;
             case ATTACH_TYPE_SNK:
-                vdbg("snk -> snk\n");
+                dbg("snk -> snk\n");
                 break;
             case ATTACH_TYPE_SRC:
-                vdbg("snk -> wait_src\n");
+                dbg("snk -> wait_src\n");
                 info->state = USB_STATE_ATTACHED_WAIT_SRC;
                 fusb302_write_connected_src(cc);
 
@@ -713,7 +713,7 @@ static void fusb302_update_state(struct fusb302_dev_s *info)
                 }
                 break;
             case ATTACH_TYPE_ACC:
-                vdbg("snk -> acc\n");
+                dbg("snk -> acc\n");
             default:
                 ASSERT(FALSE);
                 break;
@@ -723,7 +723,7 @@ static void fusb302_update_state(struct fusb302_dev_s *info)
     case USB_STATE_ATTACHED_SRC:
         switch (new_attach) {
             case ATTACH_TYPE_NONE:
-                vdbg("src -> unattached\n");
+                dbg("src -> unattached\n");
                 info->state = USB_STATE_UNATTACHED;
                 fusb302_write_disconnected();
                 fusb302_notify_device_usb_ext(info);
@@ -731,7 +731,7 @@ static void fusb302_update_state(struct fusb302_dev_s *info)
                 gpio_set_value(info->gpio_vbus_en, 0);
                 break;
             case ATTACH_TYPE_SNK:
-                vdbg("src -> wait_snk\n");
+                dbg("src -> wait_snk\n");
                 info->state = USB_STATE_ATTACHED_WAIT_SNK;
                 fusb302_write_connected_snk(cc);
 
@@ -743,10 +743,10 @@ static void fusb302_update_state(struct fusb302_dev_s *info)
                 }
                 break;
             case ATTACH_TYPE_SRC:
-                vdbg("src -> src\n");
+                dbg("src -> src\n");
                 break;
             case ATTACH_TYPE_ACC:
-                vdbg("src -> acc\n");
+                dbg("src -> acc\n");
             default:
                 ASSERT(FALSE);
                 break;
@@ -796,6 +796,8 @@ int fusb302_register(int int_n, int gpio_vbus_en)
 {
     int ret;
     struct fusb302_dev_s *info;
+
+    dbg("registering fusb302...\n");
 
     info = kmm_zalloc(sizeof(*fusb302_info));
     if (!info) {
@@ -879,12 +881,14 @@ int fusb302_usb_ext_unregister_callback(struct device *dev)
 
 static uint8_t fusb302_usb_ext_get_attached(void)
 {
+    dbg("fusb302_usb_ext_get_attached\n");
     return (fusb302_get_state() == USB_STATE_ATTACHED_SRC ||
             fusb302_get_state() == USB_STATE_ATTACHED_SNK);
 }
 
 static uint8_t fusb302_usb_ext_get_protocol(void)
 {
+    dbg("fusb302_usb_ext_get_protocol\n");
     return GB_USB_EXT_PROTOCOL_3_1;
 }
 
@@ -901,6 +905,9 @@ static uint8_t fusb302_usb_ext_get_type(void)
 
 static int fusb302_usb_ext_open(struct device *dev)
 {
+
+   dbg("fusb302_usb_ext_open...\n");
+
     return 0;
 }
 
@@ -911,6 +918,8 @@ static void fusb302_usb_ext_close(struct device *dev)
 static int fusb302_usb_ext_probe(struct device *dev)
 {
     struct device_resource *path_res;
+
+    dbg("fusb302_usb_ext_probe...\n");
 
     fusb302_info->usb_ext.dev = dev;
     path_res = device_resource_get_by_name(dev, DEVICE_RESOURCE_TYPE_REGS, "path");
@@ -963,6 +972,8 @@ static int fusb302_ext_power_register_callback(struct device *dev,
     if (!info)
         return 0;
 
+    dbg("fusb302_ext_power_register_callback\n");
+
     /* get the initial state of the connection */
     info->state = fusb302_get_state();
 
@@ -1004,6 +1015,8 @@ static int fusb302_ext_power_get_output(struct device *dev,
 
 static int fusb302_ext_power_open(struct device *dev)
 {
+
+    dbg("fusb302_ext_power_open\n");
     return 0;
 }
 
@@ -1013,6 +1026,8 @@ static void fusb302_ext_power_close(struct device *dev)
 
 static int fusb302_ext_power_probe(struct device *dev)
 {
+
+    dbg("registering fusb302_ext_power...\n");
     device_set_private(dev, fusb302_info);
     fusb302_info->ext_power.dev = dev;
     return 0;

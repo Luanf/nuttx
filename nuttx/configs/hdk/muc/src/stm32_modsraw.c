@@ -105,3 +105,23 @@ struct device_driver mods_raw_driver = {
     .desc = "Reference Raw Interface",
     .ops = &mods_raw_driver_ops,
 };
+
+static struct device_raw_type_ops temp_raw_type_ops = {
+    .recv = temp_raw_recv,
+    .register_callback = temp_raw_register_callback,
+    .unregister_callback = temp_raw_unregister_callback,
+};
+
+static struct device_driver_ops temperature_driver_ops = {
+    .probe = temp_raw_probe,
+    .remove = temp_raw_remove,
+    .type_ops = &temp_raw_type_ops,
+};
+
+struct device_driver mods_raw_temperature_driver = {
+    .type = DEVICE_TYPE_RAW_HW,
+    .name = "mods_raw_temperature",
+    .desc = "Temperature sensor Raw Interface",
+    .ops = &temperature_driver_ops,
+};
+

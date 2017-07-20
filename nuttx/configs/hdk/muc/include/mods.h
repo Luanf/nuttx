@@ -62,6 +62,10 @@
 #define GPIO_MODS_LED_DRV_3      CALC_GPIO_NUM('E',  8)
 #define GPIO_MODS_FUSB302_INT_N  CALC_GPIO_NUM('G', 13)
 
+#define GPIO_MYGPIO2             CALC_GPIO_NUM('B', 11)
+#define GPIO_MYGPIO3             CALC_GPIO_NUM('B', 10)
+#define GPIO_MYBUTTON			 CALC_GPIO_NUM('A', 6)
+
 #define GPIO_APBE_UART_RX        CALC_GPIO_NUM('B',  7)
 #define GPIO_APBE_UART_TX        CALC_GPIO_NUM('B',  6)
 #define GPIO_APBE_UART_CTS       CALC_GPIO_NUM('G', 11)
@@ -102,6 +106,9 @@
 #define GPIO_MODS_BASE_ATTACH    GPIO_MODS_SL_BPLUS_AIN
 
 #define GPIO_MODS_DEMO_ENABLE    CALC_GPIO_NUM('G', 10)
+#define GPIO_MODS_DEMO_1    	 CALC_GPIO_NUM('G', 10)
+#define GPIO_MODS_DEMO_2    	 CALC_GPIO_NUM('G', 12)
+#define GPIO_MODS_BUTTON         CALC_GPIO_NUM('G',  9)
 #define GPIO_MODS_RST_LS         CALC_GPIO_NUM('H',  0)
 
 #if IS_BATT_PCARD

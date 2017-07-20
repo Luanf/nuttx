@@ -454,6 +454,30 @@ static struct device devices[] = {
         .id   = 0,
     },
 #endif
+#ifdef CONFIG_MODS_TEST1
+    {
+        .type = DEVICE_TYPE_RAW_HW,
+        .name = "mods_test1",
+        .desc = "MOD Test1 by Luan",
+        .id   = 0,
+    },
+#endif    
+#ifdef CONFIG_MODS_RAW_GPIO1
+    {
+        .type = DEVICE_TYPE_RAW_HW,
+        .name = "mods_raw_gpio1",
+        .desc = "GPIO test",
+        .id   = 0,
+    },
+#endif
+    #ifdef CONFIG_MODS_TESTADC
+        {
+            .type = DEVICE_TYPE_RAW_HW,
+            .name = "mods_testadc",
+            .desc = "MOD Testadc by Luan",
+            .id   = 0,
+        },
+    #endif    
 #ifdef CONFIG_MODS_RAW_TERMAPP
     {
         .type = DEVICE_TYPE_RAW_HW,
@@ -982,6 +1006,18 @@ void board_initialize(void)
   extern struct device_driver mods_raw_blinky_driver;
   device_register_driver(&mods_raw_blinky_driver);
 #endif
+#ifdef CONFIG_MODS_RAW_GPIO1
+  extern struct device_driver mods_raw_gpio1_driver;
+  device_register_driver(&mods_raw_gpio1_driver);
+#endif
+#ifdef CONFIG_MODS_TEST1
+  extern struct device_driver mods_raw_test1_driver;
+  device_register_driver(&mods_raw_test1_driver);
+#endif  
+  #ifdef CONFIG_MODS_TESTADC
+  extern struct device_driver mods_raw_testadc_driver;
+  device_register_driver(&mods_raw_testadc_driver);
+#endif 
 #ifdef CONFIG_MODS_RAW_TERMAPP
   extern struct device_driver mods_raw_termapp_driver;
   device_register_driver(&mods_raw_termapp_driver);

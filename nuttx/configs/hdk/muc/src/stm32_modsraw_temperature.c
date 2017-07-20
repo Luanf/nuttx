@@ -253,6 +253,11 @@ static void temp_raw_worker(void *arg)
     read(adc_fd, &sample, sizeof(sample));
     close(adc_fd);
 
+    /**/
+    vdbg("%d\n", (uint8_t *)&sample.am_data);
+    dbg("%d\n", (uint8_t *)&sample.am_data);
+    /**/
+
     temp_raw_build_send_mesg(info->gDevice, TEMP_RAW_COMMAND_DATA,
                 sizeof(sample.am_data), (uint8_t *)&sample.am_data, 0);
 
@@ -272,6 +277,7 @@ errout:
  */
 static int temp_raw_recv(struct device *dev, uint32_t len, uint8_t data[])
 {
+    dbg("RAW RAW RAW FIGHT THE POWER");
     struct temp_raw_attr sattr;
     struct temp_raw_msg *smsg;
     struct temp_raw_info *info = NULL;
@@ -467,6 +473,7 @@ static int temp_raw_unregister_callback(struct device *dev)
  */
 static int temp_raw_probe(struct device *dev)
 {
+    dbg("ADC WORKER CALLED");
     struct temp_raw_info *info;
 
     if (!dev) {

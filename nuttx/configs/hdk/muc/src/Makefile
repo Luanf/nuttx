@@ -69,6 +69,25 @@ ifeq ($(CONFIG_MODS_RAW_BLINKY),y)
 CSRCS += stm32_modsraw_blinky.c
 endif
 
+ifeq ($(CONFIG_MODS_RAW_GPIO1),y)
+CSRCS += stm32_modsraw_gpio1.c
+endif
+
+ifeq ($(CONFIG_MODS_TEST1),y)
+CSRCS += stm32_test1.c
+endif
+
+ifeq ($(CONFIG_MODS_TESTADC),y)
+CSRCS += stm32_modsraw_testadc.c
+CSRCS += th02.c
+CSRCS += vm.c
+CSRCS += syscall.c
+CSRCS += EH.c
+CSRCS += TM.c
+CSRCS += HAL.c
+endif
+
+
 ifeq ($(CONFIG_MODS_RAW_TERMAPP),y)
 CSRCS += stm32_modsraw_termapp.c
 endif

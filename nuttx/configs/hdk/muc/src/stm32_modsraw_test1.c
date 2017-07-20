@@ -57,61 +57,6 @@ struct blinky_info {
     raw_send_callback gCallback;
 };
 
-static int blinky_timer_handler(int irq, FAR void *context)
-{
-    uint8_t new_val;
-
-    pm_activity(BLINKY_ACTIVITY);
-    STM32_TIM_ACKINT(tim_dev, 0);
-
-    new_val = gpio_get_value(GPIO_MODS_LED_DRV_3) ^ 1;
-    gpio_set_value(GPIO_MODS_LED_DRV_3, new_val);
-
-    llvdbg("new_val=%d\n", new_val);
-    return 0;
-}
-
-static void blinky_timer_start(void)
-{
-
-    //gpio_set_value(GPIO_MODS_DEMO_ENABLE, 1);
-    gpio_set_value(GPIO_MODS_LED_DRV_3, 1);
-
-    if (!tim_dev) {
-        dbg("BLINKY\n");
-
-        tim_dev = stm32_tim_init(BLINKY_TIM);
-
-        DEBUGASSERT(tim_dev);
-
-        STM32_TIM_SETPERIOD(tim_dev, BLINKY_PERIOD);
-        STM32_TIM_SETCLOCK(tim_dev, BLINKY_TIM_FREQ);
-        STM32_TIM_SETMODE(tim_dev, STM32_TIM_MODE_PULSE);
-        STM32_TIM_SETISR(tim_dev, blinky_timer_handler, 0);
-        STM32_TIM_ENABLEINT(tim_dev, 0);
-    } else {
-        dbg("ignore\n");
-    }
-}
-
-static void blinky_timer_stop(void)
-{   
-    
-    //gpio_set_value(GPIO_MODS_DEMO_ENABLE, 0);
-    gpio_set_value(GPIO_MODS_LED_DRV_3, 0);
-
-    if (tim_dev) {
-        dbg("STOP\n");
-
-        STM32_TIM_DISABLEINT(tim_dev, 0);
-        stm32_tim_deinit(tim_dev);
-        tim_dev = NULL;
-
-        gpio_set_value(GPIO_MODS_LED_DRV_3, LED_OFF);
-    } else {
-        dbg("ignore\n");
-    }
-}
 
 static int read_button_state(void) 
 {
@@ -215,7 +160,7 @@ static int pow(int base, int exp) {
 }
 
 
-static int blinky_recv(struct device *dev, uint32_t len, uint8_t data[])
+static int my_recv(struct device *dev, uint32_t len, uint8_t data[])
 {
    
     uint8_t msg[] = {0xFF, 0xFA};
@@ -223,30 +168,17 @@ static int blinky_recv(struct device *dev, uint32_t len, uint8_t data[])
     
     if (len == 1) {
     	if (data[0] == 0 || data[0] == '0')
-            blinky_timer_stop();
+            gpio_direction_out(GPIO_MODS_LED_DRV_3, LED_OFF);
     	else if (data[0] == 1 || data[0] == '1')
-            blinky_timer_start();
-        else if (data[0] == 5 || data[0] == '5') { 
-            msg[0] = read_button_state();
-            res = blinky_send(dev, 1, msg);
-        }
+            gpio_direction_out(GPIO_MODS_LED_DRV_3, LED_ON);
         return res;
-    } else if (len == 2) {
-        return blinky_set_gpio(data[0], data[1]);
-    } else if (len == 3) {
-        if (data[0] == 4 || data[0] == '4') {
-            int i = 0;
-            dbg("STRESS %d %d \n", data[1], data[2]);
-            for(i = 0; i < data[2]; i++) {
-                res = blinky_send_bulk(dev, pow(2, data[1]));
-            }
-            return res;
-        } 
-    } 
+
+    }
+
     return -EINVAL;
 }
 
-static int blinky_register_callback(struct device *dev,
+static int my_register_callback(struct device *dev,
                                     raw_send_callback callback)
 {
 
@@ -260,7 +192,7 @@ static int blinky_register_callback(struct device *dev,
     return 0;
 }
 
-static int blinky_unregister_callback(struct device *dev)
+static int my_unregister_callback(struct device *dev)
 {
     struct blinky_info *info = NULL;
 
@@ -273,11 +205,11 @@ static int blinky_unregister_callback(struct device *dev)
     return 0;
 }
 
-static int blinky_probe(struct device *dev)
+static int my_setup(struct device *dev)
 {
     gpio_direction_out(GPIO_MODS_LED_DRV_3, LED_OFF);
-    gpio_direction_out(GPIO_MODS_DEMO_1, 0);
-    gpio_direction_out(GPIO_MODS_DEMO_2, 1);
+    gpio_direction_out(GPIO_MYGPIO2, 0);
+    gpio_direction_out(GPIO_MYGPIO3, 1);
     gpio_direction_in(GPIO_MODS_BUTTON);
 
     struct blinky_info *info;
@@ -300,7 +232,7 @@ static int blinky_probe(struct device *dev)
 /**
  * remove function called when device is unregistered.
  */
-static void blinky_remove(struct device *dev)
+static void my_remove(struct device *dev)
 {
     struct blinky_info *info = NULL;
 
@@ -314,21 +246,21 @@ static void blinky_remove(struct device *dev)
 }
 
 
-static struct device_raw_type_ops blinky_type_ops = {
-    .recv = blinky_recv,
-    .register_callback = blinky_register_callback,
-    .unregister_callback = blinky_unregister_callback,
+static struct device_raw_type_ops test1_type_ops = {
+    .recv = my_recv,
+    .register_callback = my_register_callback,
+    .unregister_callback = my_unregister_callback,
 };
 
-static struct device_driver_ops blinky_driver_ops = {
-    .probe = blinky_probe,
-    .remove = blinky_remove, 
-    .type_ops = &blinky_type_ops,
+static struct device_driver_ops test1_driver_ops = {
+    .probe = my_setup,
+    .remove = my_remove, 
+    .type_ops = &test1_type_ops,
 };
 
-struct device_driver mods_raw_blinky_driver = {
+struct device_driver mods_raw_test1_driver = {
     .type = DEVICE_TYPE_RAW_HW,
-    .name = "mods_raw_blinky",
-    .desc = "Blinky LED Raw Interface",
-    .ops = &blinky_driver_ops,
+    .name = "mods_test1",
+    .desc = "MOD Test1 by Luan",
+    .ops = &test1_driver_ops,
 };
