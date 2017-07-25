@@ -1,0 +1,2149 @@
+diff --git a/apps/greybus-utils/manifests/hdk-blinky.mnfs b/apps/greybus-utils/manifests/hdk-blinky.mnfs
+index a5a8559..0797170 100644
+--- a/apps/greybus-utils/manifests/hdk-blinky.mnfs
++++ b/apps/greybus-utils/manifests/hdk-blinky.mnfs
+@@ -12,15 +12,11 @@ product-string-id = 2
+ 
+ ; Interface vendor string (id can't be 0)
+ [string-descriptor 1]
+-string = Motorola Mobility, LLC
++string = Eldorado Test
+ 
+ ; Interface product string (id can't be 0)
+ [string-descriptor 2]
+-string = MDK-BLINKY
+-
+-; Load the MDKUtility APK
+-[string-descriptor 3]
+-string = pkg://com.motomodsdev.mdkutility
++string = MDK-DTV
+ 
+ ; Control protocol on CPort 0
+ [cport-descriptor 0]
+diff --git a/apps/greybus-utils/manifests/hdk-dtv.mnfs b/apps/greybus-utils/manifests/hdk-dtv.mnfs
+new file mode 100644
+index 0000000..2ad43e5
+--- /dev/null
++++ b/apps/greybus-utils/manifests/hdk-dtv.mnfs
+@@ -0,0 +1,70 @@
++;
++; HDK Manifest
++;
++
++[manifest-header]
++version-major = 0
++version-minor = 1
++
++[interface-descriptor]
++vendor-string-id = 1
++product-string-id = 2
++
++; Interface vendor string (id can't be 0)
++[string-descriptor 1]
++string = Motorola Mobility, LLC
++
++; Interface product string (id can't be 0)
++[string-descriptor 2]
++string = MDK-DTV
++
++; Control protocol on CPort 0
++[cport-descriptor 0]
++bundle = 0
++protocol = 0x00
++
++; Control protocol Bundle 0
++[bundle-descriptor 0]
++class = 0
++
++; Motorola specific on CPort 1
++[cport-descriptor 1]
++bundle = 1
++protocol = 0xff
++
++; Debug related Bundle 1
++[bundle-descriptor 1]
++class = 0xff
++
++; Battery on CPort 2
++[cport-descriptor 2]
++bundle = 2
++protocol = 0x08
++
++; PTP on CPort 3
++[cport-descriptor 3]
++bundle = 2
++protocol = 0xef
++
++; Battery related Bundle 2
++[bundle-descriptor 2]
++class = 0x08
++
++; RAW interface on CPort 4
++[cport-descriptor 4]
++bundle = 3
++protocol = 0xfe
++
++; RAW Bundle 3
++[bundle-descriptor 3]
++class = 0xfe
++
++; USB-EXT protocol on CPort 5
++[cport-descriptor 5]
++bundle = 4
++protocol = 0xec
++
++; Bundle 4
++[bundle-descriptor 4]
++class = 0xec
++
+diff --git a/nuttx/build.sh b/nuttx/build.sh
+new file mode 100755
+index 0000000..a0cd400
+--- /dev/null
++++ b/nuttx/build.sh
+@@ -0,0 +1,12 @@
++#!/bin/bash
++
++cd $BUILD_TOP/nuttx/nuttx
++make distclean
++cd $BUILD_TOP/nuttx/nuttx/tools
++
++./configure.sh hdk/muc/dtv
++#./configure.sh hdk/muc/base_powered
++
++cd $BUILD_TOP/nuttx/nuttx
++make
++
+diff --git a/nuttx/configs/hdk/muc/blinky/defconfig b/nuttx/configs/hdk/muc/blinky/defconfig
+index 875ed78..d287c3e 100644
+--- a/nuttx/configs/hdk/muc/blinky/defconfig
++++ b/nuttx/configs/hdk/muc/blinky/defconfig
+@@ -440,8 +440,8 @@ CONFIG_ARCH_CHIPID=y
+ CONFIG_ARCH_HAVE_BOARDID=y
+ CONFIG_ARCH_BOARDID=y
+ CONFIG_ARCH_USE_PREDEFINED_BOARDID=y
+-CONFIG_ARCH_BOARDID_VID=0x00000312
+-CONFIG_ARCH_BOARDID_PID=0x00010403
++CONFIG_ARCH_BOARDID_VID=0x00000042
++CONFIG_ARCH_BOARDID_PID=0x00000001
+ CONFIG_ARCH_HAVE_SYSRESET=y
+ CONFIG_ARCH_HAVE_RESET_FLAGS=y
+ CONFIG_ARCH_RESET_FLAGS=y
+diff --git a/nuttx/configs/hdk/muc/dtv/Make.defs b/nuttx/configs/hdk/muc/dtv/Make.defs
+new file mode 100644
+index 0000000..20f741f
+--- /dev/null
++++ b/nuttx/configs/hdk/muc/dtv/Make.defs
+@@ -0,0 +1,114 @@
++############################################################################
++#
++#   Copyright (C) 2011-2012 Gregory Nutt. All rights reserved.
++#   Author: Gregory Nutt <gnutt@nuttx.org>
++#
++# Redistribution and use in source and binary forms, with or without
++# modification, are permitted provided that the following conditions
++# are met:
++#
++# 1. Redistributions of source code must retain the above copyright
++#    notice, this list of conditions and the following disclaimer.
++# 2. Redistributions in binary form must reproduce the above copyright
++#    notice, this list of conditions and the following disclaimer in
++#    the documentation and/or other materials provided with the
++#    distribution.
++# 3. Neither the name NuttX nor the names of its contributors may be
++#    used to endorse or promote products derived from this software
++#    without specific prior written permission.
++#
++# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
++# "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
++# LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
++# FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
++# COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
++# INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
++# BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS
++# OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
++# AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
++# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
++# ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
++# POSSIBILITY OF SUCH DAMAGE.
++#
++############################################################################
++
++include ${TOPDIR}/.config
++include ${TOPDIR}/tools/Config.mk
++include ${TOPDIR}/arch/arm/src/armv7-m/Toolchain.defs
++
++LDSCRIPT = ld.script
++
++ifeq ($(WINTOOL),y)
++  # Windows-native toolchains
++  DIRLINK = $(TOPDIR)/tools/copydir.sh
++  DIRUNLINK = $(TOPDIR)/tools/unlink.sh
++  MKDEP = $(TOPDIR)/tools/mknulldeps.sh
++  ARCHINCLUDES = -I. -isystem "${shell cygpath -w $(TOPDIR)/include}"
++  ARCHXXINCLUDES = -I. -isystem "${shell cygpath -w $(TOPDIR)/include}" -isystem "${shell cygpath -w $(TOPDIR)/include/cxx}"
++  ARCHSCRIPT = -T "${shell cygpath -w $(TOPDIR)/configs/$(CONFIG_ARCH_BOARD)/scripts/$(LDSCRIPT)}"
++else
++  # Linux/Cygwin-native toolchain
++  MKDEP = $(TOPDIR)/tools/mkdeps.sh
++  ARCHINCLUDES = -I. -isystem $(TOPDIR)/include
++  ARCHXXINCLUDES = -I. -isystem $(TOPDIR)/include -isystem $(TOPDIR)/include/cxx
++  ARCHSCRIPT = -T$(TOPDIR)/configs/$(CONFIG_ARCH_BOARD)/scripts/$(LDSCRIPT)
++endif
++
++CC = $(CROSSDEV)gcc
++CXX = $(CROSSDEV)g++
++CPP = $(CROSSDEV)gcc -E
++LD = $(CROSSDEV)ld
++AR = $(ARCROSSDEV)ar rcs
++NM = $(ARCROSSDEV)nm
++OBJCOPY = $(CROSSDEV)objcopy
++OBJDUMP = $(CROSSDEV)objdump
++
++ARCHCCVERSION = ${shell $(CC) -v 2>&1 | sed -n '/^gcc version/p' | sed -e 's/^gcc version \([0-9\.]\)/\1/g' -e 's/[-\ ].*//g' -e '1q'}
++ARCHCCMAJOR = ${shell echo $(ARCHCCVERSION) | cut -d'.' -f1}
++
++OBJCOPYARGS = -R .ramlog
++
++ifeq ($(CONFIG_DEBUG_SYMBOLS),y)
++  ARCHOPTIMIZATION = -g
++endif
++
++ifneq ($(CONFIG_DEBUG_NOOPT),y)
++  ARCHOPTIMIZATION += $(MAXOPTIMIZATION) -fno-strict-aliasing -fno-strength-reduce -fomit-frame-pointer
++endif
++
++# TODO: remove -Wno-cpp when i2c fixes are complete
++ARCHCFLAGS = -fno-builtin -Werror -Wno-cpp -fno-short-enums
++ARCHCXXFLAGS = -fno-builtin -fno-exceptions -fno-rtti
++ARCHWARNINGS = -Wall -Wstrict-prototypes -Wshadow
++ARCHWARNINGSXX = -Wall -Wshadow
++ARCHDEFINES =
++ARCHPICFLAGS = -fpic -msingle-pic-base -mpic-register=r10
++
++CFLAGS = $(ARCHCFLAGS) $(ARCHWARNINGS) $(ARCHOPTIMIZATION) $(ARCHCPUFLAGS) $(ARCHINCLUDES) $(ARCHDEFINES) $(EXTRADEFINES) -pipe
++CPICFLAGS = $(ARCHPICFLAGS) $(CFLAGS)
++CXXFLAGS = $(ARCHCXXFLAGS) $(ARCHWARNINGSXX) $(ARCHOPTIMIZATION) $(ARCHCPUFLAGS) $(ARCHXXINCLUDES) $(ARCHDEFINES) $(EXTRADEFINES) -pipe
++CXXPICFLAGS = $(ARCHPICFLAGS) $(CXXFLAGS)
++CPPFLAGS = $(ARCHINCLUDES) $(ARCHDEFINES) $(EXTRADEFINES)
++AFLAGS = $(CFLAGS) -D__ASSEMBLY__
++
++NXFLATLDFLAGS1 = -r -d -warn-common
++NXFLATLDFLAGS2 = $(NXFLATLDFLAGS1) -T$(TOPDIR)/binfmt/libnxflat/gnu-nxflat-pcrel.ld -no-check-sections
++LDNXFLATFLAGS = -e main -s 2048
++
++OBJEXT = .o
++LIBEXT = .a
++EXEEXT =
++
++ifneq ($(CROSSDEV),arm-nuttx-elf-)
++  LDFLAGS += -nostartfiles -nodefaultlibs
++endif
++ifeq ($(CONFIG_DEBUG_SYMBOLS),y)
++  LDFLAGS += -g
++endif
++
++
++HOSTCC = gcc
++HOSTINCLUDES = -I.
++HOSTCFLAGS = -Wall -Wstrict-prototypes -Wshadow -g -pipe
++
++HOSTLDFLAGS =
+diff --git a/nuttx/configs/hdk/muc/dtv/defconfig b/nuttx/configs/hdk/muc/dtv/defconfig
+new file mode 100644
+index 0000000..2b1c39c
+--- /dev/null
++++ b/nuttx/configs/hdk/muc/dtv/defconfig
+@@ -0,0 +1,1307 @@
++#
++# Automatically generated file; DO NOT EDIT.
++# Nuttx/ Configuration
++#
++
++#
++# Build Setup
++#
++# CONFIG_EXPERIMENTAL is not set
++# CONFIG_DEFAULT_SMALL is not set
++CONFIG_HOST_LINUX=y
++# CONFIG_HOST_OSX is not set
++# CONFIG_HOST_WINDOWS is not set
++# CONFIG_HOST_OTHER is not set
++
++#
++# Build Configuration
++#
++CONFIG_APPS_DIR="../apps"
++CONFIG_BUILD_FLAT=y
++# CONFIG_BUILD_2PASS is not set
++
++#
++# Binary Output Formats
++#
++# CONFIG_RRLOAD_BINARY is not set
++CONFIG_INTELHEX_BINARY=y
++# CONFIG_MOTOROLA_SREC is not set
++CONFIG_RAW_BINARY=y
++# CONFIG_UBOOT_UIMAGE is not set
++CONFIG_TFTF_IMAGE=y
++CONFIG_TFTF_STAGE=3
++CONFIG_CHIP_MFG_ID=0x00000104
++CONFIG_CHIP_PRODUCT_ID=0x00006415
++
++#
++# Customize Header Files
++#
++# CONFIG_ARCH_STDINT_H is not set
++# CONFIG_ARCH_STDBOOL_H is not set
++# CONFIG_ARCH_MATH_H is not set
++# CONFIG_ARCH_FLOAT_H is not set
++# CONFIG_ARCH_STDARG_H is not set
++
++#
++# Debug Options
++#
++CONFIG_DEBUG=y
++CONFIG_ARCH_HAVE_STACKCHECK=y
++CONFIG_ARCH_HAVE_HEAPCHECK=y
++# CONFIG_DEBUG_VERBOSE is not set
++CONFIG_DEBUG_TIMESTAMP=y
++
++#
++# Subsystem Debug Options
++#
++# CONFIG_DEBUG_AUDIO is not set
++# CONFIG_DEBUG_BINFMT is not set
++# CONFIG_DEBUG_FS is not set
++# CONFIG_DEBUG_GRAPHICS is not set
++# CONFIG_DEBUG_LIB is not set
++# CONFIG_DEBUG_MM is not set
++# CONFIG_DEBUG_SCHED is not set
++
++#
++# OS Function Debug Options
++#
++# CONFIG_DEBUG_DMA is not set
++# CONFIG_DEBUG_HEAP is not set
++# CONFIG_DEBUG_IRQ is not set
++# CONFIG_DEBUG_STACK is not set
++
++#
++# Driver Debug Options
++#
++# CONFIG_DEBUG_ANALOG is not set
++# CONFIG_DEBUG_GPIO is not set
++# CONFIG_DEBUG_I2C is not set
++# CONFIG_DEBUG_RTC is not set
++CONFIG_DEBUG_SPI=y
++# CONFIG_DEBUG_WATCHDOG is not set
++CONFIG_DEBUG_SYMBOLS=y
++CONFIG_ARCH_HAVE_CUSTOMOPT=y
++# CONFIG_DEBUG_NOOPT is not set
++# CONFIG_DEBUG_CUSTOMOPT is not set
++CONFIG_DEBUG_FULLOPT=y
++
++#
++# System Type
++#
++CONFIG_ARCH_ARM=y
++# CONFIG_ARCH_AVR is not set
++# CONFIG_ARCH_HC is not set
++# CONFIG_ARCH_MIPS is not set
++# CONFIG_ARCH_RGMP is not set
++# CONFIG_ARCH_SH is not set
++# CONFIG_ARCH_SIM is not set
++# CONFIG_ARCH_X86 is not set
++# CONFIG_ARCH_Z16 is not set
++# CONFIG_ARCH_Z80 is not set
++CONFIG_ARCH="arm"
++
++#
++# ARM Options
++#
++# CONFIG_ARCH_CHIP_A1X is not set
++# CONFIG_ARCH_CHIP_C5471 is not set
++# CONFIG_ARCH_CHIP_CALYPSO is not set
++# CONFIG_ARCH_CHIP_DM320 is not set
++# CONFIG_ARCH_CHIP_IMX is not set
++# CONFIG_ARCH_CHIP_KINETIS is not set
++# CONFIG_ARCH_CHIP_KL is not set
++# CONFIG_ARCH_CHIP_LM is not set
++# CONFIG_ARCH_CHIP_TIVA is not set
++# CONFIG_ARCH_CHIP_LPC17XX is not set
++# CONFIG_ARCH_CHIP_LPC214X is not set
++# CONFIG_ARCH_CHIP_LPC2378 is not set
++# CONFIG_ARCH_CHIP_LPC31XX is not set
++# CONFIG_ARCH_CHIP_LPC43XX is not set
++# CONFIG_ARCH_CHIP_NUC1XX is not set
++# CONFIG_ARCH_CHIP_SAMA5 is not set
++# CONFIG_ARCH_CHIP_SAMD is not set
++# CONFIG_ARCH_CHIP_SAM34 is not set
++CONFIG_ARCH_CHIP_STM32=y
++# CONFIG_ARCH_CHIP_STR71X is not set
++# CONFIG_ARCH_CHIP_TSB is not set
++# CONFIG_ARCH_ARM7TDMI is not set
++# CONFIG_ARCH_ARM926EJS is not set
++# CONFIG_ARCH_ARM920T is not set
++# CONFIG_ARCH_CORTEXM0 is not set
++# CONFIG_ARCH_CORTEXM3 is not set
++CONFIG_ARCH_CORTEXM4=y
++# CONFIG_ARCH_CORTEXA5 is not set
++# CONFIG_ARCH_CORTEXA8 is not set
++CONFIG_ARCH_FAMILY="armv7-m"
++CONFIG_ARCH_CHIP="stm32"
++# CONFIG_ARMV7M_USEBASEPRI is not set
++CONFIG_ARCH_HAVE_CMNVECTOR=y
++# CONFIG_ARMV7M_CMNVECTOR is not set
++CONFIG_ARCH_HAVE_FPU=y
++# CONFIG_ARCH_FPU is not set
++# CONFIG_ARMV7M_MPU is not set
++# CONFIG_DEBUG_HARDFAULT is not set
++# CONFIG_ARM_SEMIHOSTING is not set
++CONFIG_ARCH_HAVE_HIRES_TIMER=y
++
++#
++# ARMV7M Configuration Options
++#
++# CONFIG_ARMV7M_TOOLCHAIN_BUILDROOT is not set
++# CONFIG_ARMV7M_TOOLCHAIN_CODEREDL is not set
++# CONFIG_ARMV7M_TOOLCHAIN_CODESOURCERYL is not set
++CONFIG_ARMV7M_TOOLCHAIN_GNU_EABIL=y
++# CONFIG_SERIAL_TERMIOS is not set
++
++#
++# STM32 Configuration Options
++#
++# CONFIG_ARCH_CHIP_STM32L151C6 is not set
++# CONFIG_ARCH_CHIP_STM32L151C8 is not set
++# CONFIG_ARCH_CHIP_STM32L151CB is not set
++# CONFIG_ARCH_CHIP_STM32L151R6 is not set
++# CONFIG_ARCH_CHIP_STM32L151R8 is not set
++# CONFIG_ARCH_CHIP_STM32L151RB is not set
++# CONFIG_ARCH_CHIP_STM32L151V6 is not set
++# CONFIG_ARCH_CHIP_STM32L151V8 is not set
++# CONFIG_ARCH_CHIP_STM32L151VB is not set
++# CONFIG_ARCH_CHIP_STM32L152C6 is not set
++# CONFIG_ARCH_CHIP_STM32L152C8 is not set
++# CONFIG_ARCH_CHIP_STM32L152CB is not set
++# CONFIG_ARCH_CHIP_STM32L152R6 is not set
++# CONFIG_ARCH_CHIP_STM32L152R8 is not set
++# CONFIG_ARCH_CHIP_STM32L152RB is not set
++# CONFIG_ARCH_CHIP_STM32L152V6 is not set
++# CONFIG_ARCH_CHIP_STM32L152V8 is not set
++# CONFIG_ARCH_CHIP_STM32L152VB is not set
++# CONFIG_ARCH_CHIP_STM32L162ZD is not set
++# CONFIG_ARCH_CHIP_STM32L433CB is not set
++# CONFIG_ARCH_CHIP_STM32L433CC is not set
++CONFIG_ARCH_CHIP_STM32L476JG=y
++# CONFIG_ARCH_CHIP_STM32L476VG is not set
++# CONFIG_ARCH_CHIP_STM32F100C8 is not set
++# CONFIG_ARCH_CHIP_STM32F100CB is not set
++# CONFIG_ARCH_CHIP_STM32F100R8 is not set
++# CONFIG_ARCH_CHIP_STM32F100RB is not set
++# CONFIG_ARCH_CHIP_STM32F100RC is not set
++# CONFIG_ARCH_CHIP_STM32F100RD is not set
++# CONFIG_ARCH_CHIP_STM32F100RE is not set
++# CONFIG_ARCH_CHIP_STM32F100V8 is not set
++# CONFIG_ARCH_CHIP_STM32F100VB is not set
++# CONFIG_ARCH_CHIP_STM32F100VC is not set
++# CONFIG_ARCH_CHIP_STM32F100VD is not set
++# CONFIG_ARCH_CHIP_STM32F100VE is not set
++# CONFIG_ARCH_CHIP_STM32F103T8 is not set
++# CONFIG_ARCH_CHIP_STM32F103TB is not set
++# CONFIG_ARCH_CHIP_STM32F103C4 is not set
++# CONFIG_ARCH_CHIP_STM32F103C8 is not set
++# CONFIG_ARCH_CHIP_STM32F103CB is not set
++# CONFIG_ARCH_CHIP_STM32F103R8 is not set
++# CONFIG_ARCH_CHIP_STM32F103RB is not set
++# CONFIG_ARCH_CHIP_STM32F103RC is not set
++# CONFIG_ARCH_CHIP_STM32F103RD is not set
++# CONFIG_ARCH_CHIP_STM32F103RE is not set
++# CONFIG_ARCH_CHIP_STM32F103V8 is not set
++# CONFIG_ARCH_CHIP_STM32F103VB is not set
++# CONFIG_ARCH_CHIP_STM32F103VC is not set
++# CONFIG_ARCH_CHIP_STM32F103VE is not set
++# CONFIG_ARCH_CHIP_STM32F103ZE is not set
++# CONFIG_ARCH_CHIP_STM32F105VB is not set
++# CONFIG_ARCH_CHIP_STM32F107VC is not set
++# CONFIG_ARCH_CHIP_STM32F207IG is not set
++# CONFIG_ARCH_CHIP_STM32F207ZE is not set
++# CONFIG_ARCH_CHIP_STM32F302CB is not set
++# CONFIG_ARCH_CHIP_STM32F302CC is not set
++# CONFIG_ARCH_CHIP_STM32F302RB is not set
++# CONFIG_ARCH_CHIP_STM32F302RC is not set
++# CONFIG_ARCH_CHIP_STM32F302VB is not set
++# CONFIG_ARCH_CHIP_STM32F302VC is not set
++# CONFIG_ARCH_CHIP_STM32F303CB is not set
++# CONFIG_ARCH_CHIP_STM32F303CC is not set
++# CONFIG_ARCH_CHIP_STM32F303RB is not set
++# CONFIG_ARCH_CHIP_STM32F303RC is not set
++# CONFIG_ARCH_CHIP_STM32F303VB is not set
++# CONFIG_ARCH_CHIP_STM32F303VC is not set
++# CONFIG_ARCH_CHIP_STM32F401RE is not set
++# CONFIG_ARCH_CHIP_STM32F405RG is not set
++# CONFIG_ARCH_CHIP_STM32F405VG is not set
++# CONFIG_ARCH_CHIP_STM32F405ZG is not set
++# CONFIG_ARCH_CHIP_STM32F407VE is not set
++# CONFIG_ARCH_CHIP_STM32F407VG is not set
++# CONFIG_ARCH_CHIP_STM32F407ZE is not set
++# CONFIG_ARCH_CHIP_STM32F407ZG is not set
++# CONFIG_ARCH_CHIP_STM32F407IE is not set
++# CONFIG_ARCH_CHIP_STM32F407IG is not set
++# CONFIG_ARCH_CHIP_STM32F427V is not set
++# CONFIG_ARCH_CHIP_STM32F427Z is not set
++# CONFIG_ARCH_CHIP_STM32F427I is not set
++# CONFIG_ARCH_CHIP_STM32F429V is not set
++# CONFIG_ARCH_CHIP_STM32F429Z is not set
++# CONFIG_ARCH_CHIP_STM32F429I is not set
++# CONFIG_ARCH_CHIP_STM32F429B is not set
++# CONFIG_ARCH_CHIP_STM32F429N is not set
++# CONFIG_ARCH_CHIP_STM32F446M is not set
++# CONFIG_ARCH_CHIP_STM32F446R is not set
++# CONFIG_ARCH_CHIP_STM32F446V is not set
++# CONFIG_ARCH_CHIP_STM32F446Z is not set
++# CONFIG_STM32_STM32L15XX is not set
++# CONFIG_STM32_ENERGYLITE is not set
++# CONFIG_STM32_STM32L4X3 is not set
++CONFIG_STM32_STM32L4X6=y
++# CONFIG_STM32_STM32F10XX is not set
++# CONFIG_STM32_VALUELINE is not set
++# CONFIG_STM32_CONNECTIVITYLINE is not set
++# CONFIG_STM32_PERFORMANCELINE is not set
++# CONFIG_STM32_HIGHDENSITY is not set
++# CONFIG_STM32_MEDIUMDENSITY is not set
++# CONFIG_STM32_LOWDENSITY is not set
++# CONFIG_STM32_STM32F20XX is not set
++# CONFIG_STM32_STM32F207 is not set
++# CONFIG_STM32_STM32F30XX is not set
++# CONFIG_STM32_STM32F40XX is not set
++# CONFIG_STM32_STM32F401 is not set
++# CONFIG_STM32_STM32F405 is not set
++# CONFIG_STM32_STM32F407 is not set
++# CONFIG_STM32_STM32F427 is not set
++# CONFIG_STM32_STM32F429 is not set
++# CONFIG_STM32_STM32F446 is not set
++CONFIG_STM32_DFU=y
++
++#
++# STM32 Peripheral Support
++#
++# CONFIG_STM32_HAVE_CCM is not set
++# CONFIG_STM32_HAVE_USBDEV is not set
++CONFIG_STM32_HAVE_OTGFS=y
++# CONFIG_STM32_HAVE_FSMC is not set
++CONFIG_STM32_HAVE_USART3=y
++CONFIG_STM32_HAVE_USART4=y
++CONFIG_STM32_HAVE_USART5=y
++# CONFIG_STM32_HAVE_USART6 is not set
++# CONFIG_STM32_HAVE_USART7 is not set
++# CONFIG_STM32_HAVE_USART8 is not set
++CONFIG_STM32_HAVE_TIM1=y
++CONFIG_STM32_HAVE_TIM5=y
++CONFIG_STM32_HAVE_TIM6=y
++CONFIG_STM32_HAVE_TIM7=y
++CONFIG_STM32_HAVE_TIM8=y
++# CONFIG_STM32_HAVE_TIM9 is not set
++# CONFIG_STM32_HAVE_TIM10 is not set
++# CONFIG_STM32_HAVE_TIM11 is not set
++# CONFIG_STM32_HAVE_TIM12 is not set
++# CONFIG_STM32_HAVE_TIM13 is not set
++# CONFIG_STM32_HAVE_TIM14 is not set
++CONFIG_STM32_HAVE_TIM15=y
++CONFIG_STM32_HAVE_TIM16=y
++CONFIG_STM32_HAVE_TIM17=y
++CONFIG_STM32_HAVE_LPTIM1=y
++CONFIG_STM32_HAVE_LPTIM2=y
++CONFIG_STM32_HAVE_ADC2=y
++CONFIG_STM32_HAVE_ADC3=y
++# CONFIG_STM32_HAVE_ADC4 is not set
++CONFIG_STM32_HAVE_CAN1=y
++# CONFIG_STM32_HAVE_CAN2 is not set
++CONFIG_STM32_HAVE_RNG=y
++# CONFIG_STM32_HAVE_ETHMAC is not set
++CONFIG_STM32_HAVE_COMP=y
++CONFIG_STM32_HAVE_RTC_SUBSECONDS=y
++CONFIG_STM32_HAVE_SAI1=y
++CONFIG_STM32_HAVE_SAI2=y
++# CONFIG_STM32_ADC1 is not set
++# CONFIG_STM32_ADC2 is not set
++# CONFIG_STM32_ADC3 is not set
++CONFIG_STM32_COMP=y
++# CONFIG_STM32_CAN1 is not set
++# CONFIG_STM32_CRC is not set
++CONFIG_STM32_DMA1=y
++# CONFIG_STM32_DMA2 is not set
++# CONFIG_STM32_DAC1 is not set
++# CONFIG_STM32_DAC2 is not set
++# CONFIG_STM32_I2C1 is not set
++# CONFIG_STM32_I2C2 is not set
++CONFIG_STM32_I2C3=y
++# CONFIG_STM32_OTGFS is not set
++CONFIG_STM32_PWR=y
++# CONFIG_STM32_RNG is not set
++# CONFIG_STM32_SAI1_A is not set
++# CONFIG_STM32_SAI1_B is not set
++# CONFIG_STM32_SAI2_A is not set
++# CONFIG_STM32_SAI2_B is not set
++# CONFIG_STM32_SDIO is not set
++# CONFIG_STM32_SPI1 is not set
++CONFIG_STM32_SPI2=y
++# CONFIG_STM32_SPI3 is not set
++CONFIG_STM32_SYSCFG=y
++# CONFIG_STM32_TIM1 is not set
++# CONFIG_STM32_TIM2 is not set
++# CONFIG_STM32_TIM3 is not set
++# CONFIG_STM32_TIM4 is not set
++# CONFIG_STM32_TIM5 is not set
++CONFIG_STM32_TIM6=y
++# CONFIG_STM32_TIM7 is not set
++# CONFIG_STM32_TIM8 is not set
++# CONFIG_STM32_TIM15 is not set
++# CONFIG_STM32_TIM16 is not set
++# CONFIG_STM32_TIM17 is not set
++# CONFIG_STM32_LPTIM1 is not set
++# CONFIG_STM32_LPTIM2 is not set
++# CONFIG_STM32_USART1 is not set
++# CONFIG_STM32_USART2 is not set
++CONFIG_STM32_USART3=y
++# CONFIG_STM32_UART4 is not set
++# CONFIG_STM32_UART5 is not set
++CONFIG_STM32_IWDG=y
++# CONFIG_STM32_WWDG is not set
++CONFIG_STM32_SPI=y
++CONFIG_STM32_I2C=y
++
++#
++# Alternate Pin Mapping
++#
++CONFIG_STM32_FLASH_PREFETCH=y
++# CONFIG_STM32_JTAG_DISABLE is not set
++# CONFIG_STM32_JTAG_FULL_ENABLE is not set
++# CONFIG_STM32_JTAG_NOJNTRST_ENABLE is not set
++CONFIG_STM32_JTAG_SW_ENABLE=y
++# CONFIG_STM32_DISABLE_IDLE_SLEEP_DURING_DEBUG is not set
++# CONFIG_STM32_FORCEPOWER is not set
++CONFIG_ARCH_BOARD_STM32_CUSTOM_CLOCKCONFIG=y
++# CONFIG_STM32_DMACAPABLE is not set
++CONFIG_STM32_USART=y
++
++#
++# U[S]ART Configuration
++#
++# CONFIG_USART3_RS485 is not set
++# CONFIG_USART3_RXDMA is not set
++# CONFIG_SERIAL_DISABLE_REORDERING is not set
++# CONFIG_STM32_USART_SINGLEWIRE is not set
++
++#
++# SPI Configuration
++#
++# CONFIG_STM32_SPI_INTERRUPTS is not set
++CONFIG_STM32_SPI_DMA=y
++
++#
++# I2C Configuration
++#
++# CONFIG_STM32_I2C_ALT is not set
++CONFIG_STM32_I2C_DYNTIMEO=y
++CONFIG_STM32_I2C_DYNTIMEO_USECPERBYTE=500
++CONFIG_STM32_I2C_DYNTIMEO_STARTSTOP=500
++CONFIG_STM32_I2CTIMEOSEC=0
++# CONFIG_STM32_I2C_DUTY16_9 is not set
++
++#
++# RTC Configuration
++#
++# CONFIG_RTC_LSECLOCK is not set
++CONFIG_RTC_LSICLOCK=y
++# CONFIG_RTC_HSECLOCK is not set
++CONFIG_RTC_ADJ_MIN_USEC=1000
++CONFIG_RTC_ADJ_MAX_USEC=2000000
++
++#
++# USB Host Configuration
++#
++
++#
++# USB Device Configuration
++#
++CONFIG_GREYBUS_MODS_NUM_CPORTS=10
++CONFIG_GPIO_CHIP_STM32=y
++# CONFIG_STM32_UART_DEVICE is not set
++
++#
++# Architecture Options
++#
++# CONFIG_ARCH_NOINTC is not set
++# CONFIG_ARCH_VECNOTIRQ is not set
++CONFIG_ARCH_DMA=y
++CONFIG_ARCH_HAVE_IRQPRIO=y
++# CONFIG_ARCH_L2CACHE is not set
++# CONFIG_ARCH_HAVE_COHERENT_DCACHE is not set
++# CONFIG_ARCH_HAVE_ADDRENV is not set
++# CONFIG_ARCH_NEED_ADDRENV_MAPPING is not set
++CONFIG_ARCH_HAVE_VFORK=y
++# CONFIG_ARCH_HAVE_MMU is not set
++CONFIG_ARCH_HAVE_MPU=y
++# CONFIG_ARCH_NAND_HWECC is not set
++# CONFIG_ARCH_HAVE_EXTCLK is not set
++# CONFIG_ARCH_USE_MPU is not set
++# CONFIG_ARCH_IRQPRIO is not set
++CONFIG_ARCH_STACKDUMP=y
++# CONFIG_ENDIAN_BIG is not set
++CONFIG_ARCH_IDLE_CUSTOM=y
++CONFIG_ARCH_CUSTOM_PMINIT=y
++# CONFIG_ARCH_HAVE_RAMFUNCS is not set
++CONFIG_ARCH_HAVE_RAMVECTORS=y
++# CONFIG_ARCH_RAMVECTORS is not set
++CONFIG_ARCH_HAVE_UID=y
++CONFIG_ARCH_UID=y
++CONFIG_ARCH_HAVE_CHIPID=y
++CONFIG_ARCH_CHIPID=y
++# CONFIG_ARCH_USE_PREDEFINED_CHIPID is not set
++CONFIG_ARCH_HAVE_BOARDID=y
++CONFIG_ARCH_BOARDID=y
++CONFIG_ARCH_USE_PREDEFINED_BOARDID=y
++CONFIG_ARCH_BOARDID_VID=0x00000042
++CONFIG_ARCH_BOARDID_PID=0x00000001
++CONFIG_ARCH_HAVE_SYSRESET=y
++CONFIG_ARCH_HAVE_RESET_FLAGS=y
++CONFIG_ARCH_RESET_FLAGS=y
++
++#
++# Board Settings
++#
++CONFIG_BOARD_LOOPSPERMSEC=1470
++# CONFIG_ARCH_CALIBRATION is not set
++
++#
++# Interrupt options
++#
++CONFIG_ARCH_HAVE_INTERRUPTSTACK=y
++CONFIG_ARCH_INTERRUPTSTACK=0
++CONFIG_ARCH_HAVE_HIPRI_INTERRUPT=y
++# CONFIG_ARCH_HIPRI_INTERRUPT is not set
++
++#
++# Boot options
++#
++# CONFIG_BOOT_RUNFROMEXTSRAM is not set
++CONFIG_BOOT_RUNFROMFLASH=y
++# CONFIG_BOOT_RUNFROMISRAM is not set
++# CONFIG_BOOT_RUNFROMSDRAM is not set
++# CONFIG_BOOT_COPYTORAM is not set
++
++#
++# Boot Memory Configuration
++#
++CONFIG_RAM_START=0x20000000
++CONFIG_RAM_SIZE=94208
++CONFIG_ARCH_HAVE_PROGMEM=y
++# CONFIG_ARCH_HAVE_SDRAM is not set
++
++#
++# Board Selection
++#
++CONFIG_ARCH_BOARD_HDK_MUC=y
++# CONFIG_ARCH_BOARD_MDK_TMPLT is not set
++# CONFIG_ARCH_BOARD_CUSTOM is not set
++# CONFIG_ARCH_BOARD_ARA_SVC is not set
++CONFIG_ARCH_BOARD="hdk/muc"
++
++#
++# Common Board Options
++#
++CONFIG_ARCH_HAVE_BUTTONS=y
++CONFIG_ARCH_BUTTONS=y
++CONFIG_ARCH_HAVE_IRQBUTTONS=y
++CONFIG_ARCH_IRQBUTTONS=y
++CONFIG_NSH_MMCSDMINOR=0
++
++#
++# Board-Specific Options
++#
++CONFIG_PM_IDLEENTER_COUNT=10
++CONFIG_PM_STANDBYENTER_COUNT=5
++# CONFIG_MODS_RAW is not set
++# CONFIG_MODS_USB2 is not set
++CONFIG_MODS_RAW_BLINKY=y
++# CONFIG_MODS_RAW_TERMAPP is not set
++# CONFIG_MODS_RAW_TEMPERATURE is not set
++CONFIG_MAX17050_DEVICE=y
++CONFIG_BATTERY_GOOD_DEVICE_COMP=y
++# CONFIG_MODS_RAW_HSIC is not set
++# CONFIG_MODS_RAW_FLIR is not set
++# CONFIG_MODS_HID_EXAMPLE is not set
++
++#
++# RTOS Features
++#
++CONFIG_DISABLE_OS_API=y
++CONFIG_DISABLE_POSIX_TIMERS=y
++# CONFIG_DISABLE_PTHREAD is not set
++# CONFIG_DISABLE_SIGNALS is not set
++CONFIG_DISABLE_MQUEUE=y
++# CONFIG_DISABLE_ENVIRON is not set
++
++#
++# Clocks and Timers
++#
++CONFIG_USEC_PER_TICK=10000
++# CONFIG_SYSTEM_TIME64 is not set
++CONFIG_CLOCK_MONOTONIC=y
++# CONFIG_JULIAN_TIME is not set
++CONFIG_MAX_WDOGPARMS=2
++CONFIG_PREALLOC_WDOGS=6
++CONFIG_WDOG_INTRESERVE=0
++CONFIG_PREALLOC_TIMERS=4
++
++#
++# Tasks and Scheduling
++#
++# CONFIG_INIT_NONE is not set
++CONFIG_INIT_ENTRYPOINT=y
++# CONFIG_INIT_FILEPATH is not set
++CONFIG_USER_ENTRYPOINT="mods_main"
++CONFIG_RR_INTERVAL=200
++CONFIG_TASK_NAME_SIZE=0
++CONFIG_MAX_TASK_ARGS=4
++CONFIG_MAX_TASKS=16
++# CONFIG_SCHED_HAVE_PARENT is not set
++CONFIG_SCHED_WAITPID=y
++
++#
++# Pthread Options
++#
++# CONFIG_MUTEX_TYPES is not set
++CONFIG_NPTHREAD_KEYS=0
++
++#
++# Performance Monitoring
++#
++# CONFIG_SCHED_CPULOAD is not set
++# CONFIG_SCHED_INSTRUMENTATION is not set
++
++#
++# Performance Tracking
++#
++
++#
++# Files and I/O
++#
++CONFIG_DEV_CONSOLE=y
++# CONFIG_FDCLONE_DISABLE is not set
++# CONFIG_FDCLONE_STDIO is not set
++CONFIG_SDCLONE_DISABLE=y
++CONFIG_NFILE_DESCRIPTORS=8
++CONFIG_NFILE_STREAMS=8
++CONFIG_NAME_MAX=32
++# CONFIG_PRIORITY_INHERITANCE is not set
++
++#
++# RTOS hooks
++#
++CONFIG_BOARD_INITIALIZE=y
++CONFIG_BOARD_INITTHREAD=y
++CONFIG_BOARD_INITTHREAD_STACKSIZE=2048
++CONFIG_BOARD_INITTHREAD_PRIORITY=240
++# CONFIG_SCHED_STARTHOOK is not set
++# CONFIG_SCHED_ATEXIT is not set
++# CONFIG_SCHED_ONEXIT is not set
++
++#
++# Signal Numbers
++#
++CONFIG_SIG_SIGUSR1=1
++CONFIG_SIG_SIGUSR2=2
++CONFIG_SIG_SIGALARM=3
++CONFIG_SIG_SIGCONDTIMEDOUT=16
++CONFIG_SIG_SIGWORK=17
++
++#
++# Stack and heap information
++#
++CONFIG_IDLETHREAD_STACKSIZE=1024
++CONFIG_USERMAIN_STACKSIZE=1024
++CONFIG_PTHREAD_STACK_MIN=256
++CONFIG_PTHREAD_STACK_DEFAULT=1024
++# CONFIG_LIB_SYSCALL is not set
++
++#
++# Device Drivers
++#
++CONFIG_DISABLE_POLL=y
++CONFIG_DEV_NULL=y
++# CONFIG_DEV_ZERO is not set
++# CONFIG_NULL_DISPLAY is not set
++# CONFIG_HDMI_DISPLAY is not set
++# CONFIG_LOOP is not set
++
++#
++# Buffering
++#
++# CONFIG_DRVR_WRITEBUFFER is not set
++# CONFIG_DRVR_READAHEAD is not set
++# CONFIG_RAMDISK is not set
++# CONFIG_CAN is not set
++# CONFIG_ARCH_HAVE_PWM_PULSECOUNT is not set
++# CONFIG_PWM is not set
++CONFIG_ARCH_HAVE_I2CRESET=y
++CONFIG_DEVICE_CORE=y
++CONFIG_GPIO=y
++# CONFIG_GPIO_TCA64XX is not set
++CONFIG_I2C=y
++# CONFIG_I2C_SLAVE is not set
++# CONFIG_I2C_TRANSFER is not set
++CONFIG_I2C_WRITEREAD=y
++# CONFIG_I2C_POLLED is not set
++# CONFIG_I2C_TRACE is not set
++# CONFIG_I2C_RESET is not set
++CONFIG_SPI=y
++CONFIG_SPI_SLAVE=y
++CONFIG_SPI_CRC16=y
++# CONFIG_SPI_OWNBUS is not set
++CONFIG_SPI_EXCHANGE=y
++# CONFIG_SPI_CMDDATA is not set
++# CONFIG_SPI_BITBANG is not set
++# CONFIG_I2S is not set
++CONFIG_RTC=y
++# CONFIG_RTC_DATETIME is not set
++CONFIG_RTC_HIRES=y
++CONFIG_RTC_FREQUENCY=32000
++# CONFIG_RTC_ALARM is not set
++CONFIG_WATCHDOG=y
++CONFIG_WATCHDOG_DEVPATH="/dev/watchdog0"
++# CONFIG_TIMER is not set
++# CONFIG_ANALOG is not set
++# CONFIG_AUDIO_DEVICES is not set
++# CONFIG_BACKLIGHT is not set
++# CONFIG_BCH is not set
++# CONFIG_INPUT is not set
++# CONFIG_LCD is not set
++# CONFIG_MHB is not set
++# CONFIG_MMCSD is not set
++# CONFIG_MTD is not set
++# CONFIG_PIPES is not set
++CONFIG_PM=y
++CONFIG_POWER=y
++# CONFIG_PWR_LIMIT is not set
++CONFIG_BATTERY=y
++# CONFIG_MAX1704X is not set
++CONFIG_BATTERY_MAX17050=y
++# CONFIG_BATTERY_MAX17050_REVERSED_SENSE_RESISTOR is not set
++CONFIG_BATTERY_MAX17050_THERMISTOR_ACCURATE_TEMP=y
++# CONFIG_BATTERY_MAX17050_SENSE_TRACE_CORRECTION is not set
++CONFIG_BATTERY_MAX17050_SAMPLE_CFG=y
++# CONFIG_BATTERY_MAX17050_STD_MODEL_2220_CFG is not set
++# CONFIG_BATTERY_MAX17050_STD_MODEL_1580_CFG is not set
++# CONFIG_CHARGER_BQ24292 is not set
++CONFIG_CHARGER_BQ25896=y
++CONFIG_CHARGER_BQ25896_I2C_BUS=3
++CONFIG_CHARGER_BQ25896_I2C_BUS_SPEED=400000
++CONFIG_CHARGER_DEVICE_BQ25896=y
++CONFIG_CHARGER_DEVICE_BQ25896_BOOST_LIM_500MA=y
++# CONFIG_CHARGER_DEVICE_BQ25896_BOOST_LIM_750MA is not set
++# CONFIG_CHARGER_DEVICE_BQ25896_BOOST_LIM_1200MA is not set
++# CONFIG_CHARGER_DEVICE_BQ25896_BOOST_LIM_1400MA is not set
++# CONFIG_CHARGER_DEVICE_BQ25896_BOOST_LIM_1650MA is not set
++# CONFIG_CHARGER_DEVICE_BQ25896_BOOST_LIM_1875MA is not set
++# CONFIG_CHARGER_DEVICE_BQ25896_BOOST_LIM_2150MA is not set
++CONFIG_BATTERY_STATE=y
++CONFIG_BATTERY_TEMP=y
++CONFIG_BATTERY_TEMP_COLD=-20
++CONFIG_BATTERY_TEMP_COOL=0
++CONFIG_BATTERY_TEMP_WARM=45
++CONFIG_BATTERY_TEMP_HOT=60
++CONFIG_BATTERY_TEMP_COOL_DOWN=70
++CONFIG_BATTERY_TEMP_HYST=2
++CONFIG_BATTERY_TEMP_DEVICE_MAX17050=y
++CONFIG_BATTERY_LEVEL=y
++CONFIG_BATTERY_LEVEL_LOW=20
++CONFIG_BATTERY_LEVEL_EMPTY_HYST=1
++CONFIG_BATTERY_LEVEL_LOW_HYST=1
++CONFIG_BATTERY_LEVEL_FULL_HYST=1
++CONFIG_BATTERY_LEVEL_DEVICE_MAX17050=y
++CONFIG_BATTERY_LEVEL_DEVICE_MAX17050_MIN_VFSOC=99
++CONFIG_BATTERY_LEVEL_DEVICE_MAX17050_MAX_ITERM=16
++CONFIG_BATTERY_LEVEL_DEVICE_MAX17050_MIN_ITERM=5
++CONFIG_BATTERY_LEVEL_DEVICE_MAX17050_EMPTY_VOLTAGE=3000
++# CONFIG_BATTERY_VOLTAGE is not set
++CONFIG_EXT_POWER=y
++# CONFIG_PAD_DETECT_DEVICE_GPIO is not set
++# CONFIG_WRLS_TX_DEVICE_GPIO is not set
++# CONFIG_SENSORS is not set
++# CONFIG_DISPLAY is not set
++# CONFIG_SERCOMM_CONSOLE is not set
++CONFIG_SERIAL=y
++# CONFIG_DEV_LOWCONSOLE is not set
++# CONFIG_16550_UART is not set
++# CONFIG_ARCH_HAVE_UART is not set
++# CONFIG_ARCH_HAVE_UART0 is not set
++# CONFIG_ARCH_HAVE_UART1 is not set
++# CONFIG_ARCH_HAVE_UART2 is not set
++# CONFIG_ARCH_HAVE_UART3 is not set
++# CONFIG_ARCH_HAVE_UART4 is not set
++# CONFIG_ARCH_HAVE_UART5 is not set
++# CONFIG_ARCH_HAVE_UART6 is not set
++# CONFIG_ARCH_HAVE_UART7 is not set
++# CONFIG_ARCH_HAVE_UART8 is not set
++# CONFIG_ARCH_HAVE_SCI0 is not set
++# CONFIG_ARCH_HAVE_SCI1 is not set
++# CONFIG_ARCH_HAVE_USART0 is not set
++# CONFIG_ARCH_HAVE_USART1 is not set
++# CONFIG_ARCH_HAVE_USART2 is not set
++CONFIG_ARCH_HAVE_USART3=y
++# CONFIG_ARCH_HAVE_USART4 is not set
++# CONFIG_ARCH_HAVE_USART5 is not set
++# CONFIG_ARCH_HAVE_USART6 is not set
++# CONFIG_ARCH_HAVE_USART7 is not set
++# CONFIG_ARCH_HAVE_USART8 is not set
++
++#
++# USART Configuration
++#
++CONFIG_USART3_ISUART=y
++CONFIG_MCU_SERIAL=y
++CONFIG_STANDARD_SERIAL=y
++# CONFIG_SERIAL_TIOCSERGSTRUCT is not set
++# CONFIG_ARM_SEMIHOSTING_CONSOLE is not set
++CONFIG_USART3_SERIAL_CONSOLE=y
++# CONFIG_NO_SERIAL_CONSOLE is not set
++
++#
++# USART3 Configuration
++#
++CONFIG_USART3_RXBUFSIZE=128
++CONFIG_USART3_TXBUFSIZE=128
++CONFIG_USART3_BAUD=115200
++CONFIG_USART3_BITS=8
++CONFIG_USART3_PARITY=0
++CONFIG_USART3_2STOP=0
++# CONFIG_USART3_IFLOWCONTROL is not set
++# CONFIG_USART3_OFLOWCONTROL is not set
++# CONFIG_SERIAL_IFLOWCONTROL is not set
++# CONFIG_SERIAL_OFLOWCONTROL is not set
++# CONFIG_USBDEV is not set
++CONFIG_FUSB302=y
++CONFIG_FUSB302_USB_EXT=y
++CONFIG_FUSB302_EXT_POWER=y
++CONFIG_FUSB302_I2C_BUS=3
++CONFIG_FUSB302_I2C_BUS_SPEED=400000
++# CONFIG_USBHOST is not set
++# CONFIG_WIRELESS is not set
++
++#
++# System Logging Device Options
++#
++
++#
++# System Logging
++#
++CONFIG_RAMLOG=y
++CONFIG_RAMLOG_SYSLOG=y
++CONFIG_RAMLOG_LAST_DMESG=y
++# CONFIG_RAMLOG_CONSOLE is not set
++CONFIG_RAMLOG_BUFSIZE=2032
++# CONFIG_RAMLOG_CRLF is not set
++CONFIG_RAMLOG_NONBLOCKING=y
++CONFIG_RAMLOG_TRULY_CIRCULAR=y
++CONFIG_GREYBUS=y
++# CONFIG_GREYBUS_TAPE_ARM_SEMIHOSTING is not set
++CONFIG_GREYBUS_CONTROL_PROTOCOL=y
++# CONFIG_GREYBUS_GPIO_PHY is not set
++# CONFIG_GREYBUS_I2C_PHY is not set
++# CONFIG_GREYBUS_SPI_PHY is not set
++CONFIG_GREYBUS_BATTERY=y
++# CONFIG_GREYBUS_MODS_I2S_PHY is not set
++# CONFIG_GREYBUS_I2S_AUDIO is not set
++# CONFIG_GREYBUS_MODS_AUDIO is not set
++# CONFIG_GREYBUS_MODS_DISPLAY is not set
++# CONFIG_GREYBUS_LOOPBACK is not set
++# CONFIG_GREYBUS_VIBRATOR is not set
++# CONFIG_GREYBUS_USB_HOST_PHY is not set
++# CONFIG_GREYBUS_PWM_PHY is not set
++# CONFIG_GREYBUS_UART_PHY is not set
++# CONFIG_GREYBUS_HID is not set
++# CONFIG_GREYBUS_SDIO_PHY is not set
++CONFIG_GREYBUS_RAW=y
++CONFIG_GREYBUS_VENDOR=y
++CONFIG_GREYBUS_VENDOR_MOTO=y
++# CONFIG_GREYBUS_NSH_UART is not set
++# CONFIG_GREYBUS_FIRMWARE is not set
++# CONFIG_GREYBUS_PTP is not set
++# CONFIG_GREYBUS_PTP_INT_SND_NEVER is not set
++# CONFIG_GREYBUS_PTP_INT_SND_SUPPLEMENTAL is not set
++# CONFIG_GREYBUS_PTP_INT_SND_LOW_BATT_SAVER is not set
++# CONFIG_GREYBUS_PTP_INT_RCV_NEVER is not set
++# CONFIG_GREYBUS_PTP_INT_RCV_FIRST is not set
++# CONFIG_GREYBUS_PTP_INT_RCV_SECOND is not set
++# CONFIG_GREYBUS_PTP_INT_RCV_PARALLEL is not set
++# CONFIG_GREYBUS_PTP_EXT_NONE is not set
++# CONFIG_GREYBUS_PTP_EXT_SUPPORTED is not set
++# CONFIG_GREYBUS_SENSORS_EXT is not set
++CONFIG_GREYBUS_MODS=y
++CONFIG_GREYBUS_MODS_SPI=y
++# CONFIG_GREYBUS_MODS_I2C is not set
++# CONFIG_GREYBUS_MODS_UART is not set
++CONFIG_GREYBUS_MODS_ATTACH=y
++CONFIG_GREYBUS_MODS_PORT=2
++CONFIG_GREYBUS_MODS_MAX_BUS_SPEED=8000000
++CONFIG_GREYBUS_MODS_DESIRED_PKT_SIZE=64
++CONFIG_GREYBUS_MODS_ACK=y
++# CONFIG_GREYBUS_SELF_DESTRUCT is not set
++CONFIG_GREYBUS_MODS_HW_ROOT_VERSION=0x03
++CONFIG_GREYBUS_MODS_SUPPORT_VENDOR_UPDATES=y
++# CONFIG_GREYBUS_FEATURE_HAVE_TIMESTAMPS is not set
++# CONFIG_GREYBUS_LIGHTS is not set
++CONFIG_GREYBUS_USB_EXT=y
++# CONFIG_GREYBUS_CAMERA_EXT is not set
++CONFIG_PROGMEM=y
++
++#
++# Register logging to RAM Options
++#
++# CONFIG_REGLOG is not set
++
++#
++# Networking Support
++#
++# CONFIG_ARCH_HAVE_NET is not set
++# CONFIG_ARCH_HAVE_PHY is not set
++# CONFIG_NET is not set
++
++#
++# Crypto API
++#
++# CONFIG_CRYPTO is not set
++
++#
++# File Systems
++#
++
++#
++# File system configuration
++#
++# CONFIG_DISABLE_MOUNTPOINT is not set
++# CONFIG_FS_AUTOMOUNTER is not set
++# CONFIG_DISABLE_PSEUDOFS_OPERATIONS is not set
++# CONFIG_FS_READABLE is not set
++# CONFIG_FS_WRITABLE is not set
++# CONFIG_FS_RAMMAP is not set
++# CONFIG_FS_NXFFS is not set
++# CONFIG_FS_ROMFS is not set
++# CONFIG_FS_SMARTFS is not set
++# CONFIG_FS_BINFS is not set
++# CONFIG_FS_PROCFS is not set
++
++#
++# System Logging
++#
++# CONFIG_SYSLOG_ENABLE is not set
++CONFIG_SYSLOG=y
++# CONFIG_SYSLOG_CHAR is not set
++CONFIG_SYSLOG_DEVPATH="/dev/ramlog"
++
++#
++# Graphics Support
++#
++# CONFIG_NX is not set
++
++#
++# Memory Management
++#
++# CONFIG_MM_SMALL is not set
++CONFIG_MM_REGIONS=2
++# CONFIG_ARCH_HAVE_HEAP2 is not set
++# CONFIG_GRAN is not set
++# CONFIG_MM_BUFRAM_ALLOCATOR is not set
++
++#
++# Audio Support
++#
++# CONFIG_AUDIO is not set
++
++#
++# Binary Formats
++#
++# CONFIG_BINFMT_DISABLE is not set
++# CONFIG_BINFMT_EXEPATH is not set
++# CONFIG_NXFLAT is not set
++# CONFIG_ELF is not set
++CONFIG_BUILTIN=y
++# CONFIG_PIC is not set
++# CONFIG_SYMTAB_ORDEREDBYNAME is not set
++
++#
++# Library Routines
++#
++
++#
++# Standard C Library Options
++#
++CONFIG_STDIO_BUFFER_SIZE=64
++CONFIG_STDIO_LINEBUFFER=y
++CONFIG_NUNGET_CHARS=2
++CONFIG_LIB_HOMEDIR="/"
++# CONFIG_LIBM is not set
++# CONFIG_NOPRINTF_FIELDWIDTH is not set
++# CONFIG_LIBC_FLOATINGPOINT is not set
++CONFIG_LIB_RAND_ORDER=1
++# CONFIG_EOL_IS_CR is not set
++# CONFIG_EOL_IS_LF is not set
++# CONFIG_EOL_IS_BOTH_CRLF is not set
++CONFIG_EOL_IS_EITHER_CRLF=y
++# CONFIG_LIBC_EXECFUNCS is not set
++CONFIG_POSIX_SPAWN_PROXY_STACKSIZE=1024
++CONFIG_TASK_SPAWN_DEFAULT_STACKSIZE=2048
++# CONFIG_LIBC_STRERROR is not set
++# CONFIG_LIBC_PERROR_STDOUT is not set
++CONFIG_ARCH_LOWPUTC=y
++# CONFIG_LIBC_LOCALTIME is not set
++CONFIG_LIB_SENDFILE_BUFSIZE=512
++# CONFIG_ARCH_ROMGETC is not set
++# CONFIG_ARCH_OPTIMIZED_FUNCTIONS is not set
++
++#
++# Non-standard Library Support
++#
++CONFIG_SCHED_WORKQUEUE=y
++CONFIG_SCHED_HPWORK=y
++CONFIG_SCHED_WORKPRIORITY=192
++CONFIG_SCHED_WORKPERIOD=50000
++CONFIG_SCHED_WORKSTACKSIZE=1024
++CONFIG_SCHED_LPWORK=y
++CONFIG_SCHED_LPWORKPRIORITY=50
++CONFIG_SCHED_LPWORKPERIOD=50000
++CONFIG_SCHED_LPWORKSTACKSIZE=1024
++# CONFIG_LIB_KBDCODEC is not set
++# CONFIG_LIB_SLCDCODEC is not set
++CONFIG_LIB_RING_BUF=y
++# CONFIG_BUF_CON is not set
++CONFIG_LIB_NOTIFIER=y
++
++#
++# Basic CXX Support
++#
++# CONFIG_C99_BOOL8 is not set
++CONFIG_HAVE_CXX=y
++# CONFIG_HAVE_CXXINITIALIZE is not set
++# CONFIG_CXX_NEWLONG is not set
++
++#
++# uClibc++ Standard C++ Library
++#
++# CONFIG_UCLIBCXX is not set
++
++#
++# Application Configuration
++#
++
++#
++# Built-In Applications
++#
++CONFIG_BUILTIN_PROXY_STACKSIZE=1024
++
++#
++# Ara Applications
++#
++# CONFIG_APBRIDGEA is not set
++# CONFIG_GPBRIDGE is not set
++CONFIG_ARA_GPIO=y
++# CONFIG_ARA_BRIDGE_BRINGUP is not set
++# CONFIG_SERVICE_MANAGER is not set
++CONFIG_ARA_DEV_INFO=y
++# CONFIG_ARA_TIME is not set
++CONFIG_GREYBUS_UTILS=y
++CONFIG_GREYBUS_DEBUG=y
++# CONFIG_GB_LOG_INFO is not set
++CONFIG_GB_LOG_WARNING=y
++# CONFIG_GB_LOG_DEBUG is not set
++# CONFIG_GB_LOG_DUMP is not set
++CONFIG_GB_LOG_LEVEL=y
++# CONFIG_GB_LOG_FILE is not set
++# CONFIG_GB_LOG_FUNC is not set
++# CONFIG_MANIFEST_ALL is not set
++CONFIG_CUSTOM_MANIFEST=y
++# CONFIG_OOT_MANIFEST is not set
++CONFIG_MANIFEST="hdk-dtv"
++
++#
++# Examples
++#
++# CONFIG_EXAMPLES_BATTERY_STATE is not set
++CONFIG_EXAMPLES_BQ25896=y
++# CONFIG_EXAMPLES_BUTTONS is not set
++# CONFIG_EXAMPLES_CAN is not set
++# CONFIG_EXAMPLES_CONFIGDATA is not set
++# CONFIG_EXAMPLES_CPUHOG is not set
++# CONFIG_EXAMPLES_CXXTEST is not set
++# CONFIG_EXAMPLES_DHCPD is not set
++# CONFIG_EXAMPLES_ELF is not set
++# CONFIG_EXAMPLES_FTPC is not set
++# CONFIG_EXAMPLES_FTPD is not set
++# CONFIG_EXAMPLES_HELLO is not set
++# CONFIG_EXAMPLES_HELLOXX is not set
++# CONFIG_EXAMPLES_JSON is not set
++# CONFIG_EXAMPLES_HIDKBD is not set
++# CONFIG_EXAMPLES_KEYPADTEST is not set
++# CONFIG_EXAMPLES_IGMP is not set
++# CONFIG_EXAMPLES_MM is not set
++# CONFIG_EXAMPLES_MOUNT is not set
++# CONFIG_EXAMPLES_NRF24L01TERM is not set
++CONFIG_EXAMPLES_NSH=y
++# CONFIG_EXAMPLES_NULL is not set
++# CONFIG_EXAMPLES_NX is not set
++# CONFIG_EXAMPLES_NXTERM is not set
++# CONFIG_EXAMPLES_NXFFS is not set
++# CONFIG_EXAMPLES_NXFLAT is not set
++# CONFIG_EXAMPLES_NXHELLO is not set
++# CONFIG_EXAMPLES_NXIMAGE is not set
++# CONFIG_EXAMPLES_NXLINES is not set
++# CONFIG_EXAMPLES_NXTEXT is not set
++# CONFIG_EXAMPLES_OSTEST is not set
++# CONFIG_EXAMPLES_PIPE is not set
++# CONFIG_EXAMPLES_POSIXSPAWN is not set
++# CONFIG_EXAMPLES_QENCODER is not set
++# CONFIG_EXAMPLES_RGMP is not set
++# CONFIG_EXAMPLES_ROMFS is not set
++# CONFIG_EXAMPLES_SENDMAIL is not set
++# CONFIG_EXAMPLES_SERIALBLASTER is not set
++# CONFIG_EXAMPLES_SERIALRX is not set
++# CONFIG_EXAMPLES_SERLOOP is not set
++# CONFIG_EXAMPLES_SLCD is not set
++# CONFIG_EXAMPLES_SMART_TEST is not set
++# CONFIG_EXAMPLES_SMART is not set
++# CONFIG_EXAMPLES_TCPECHO is not set
++# CONFIG_EXAMPLES_TELNETD is not set
++# CONFIG_EXAMPLES_THTTPD is not set
++# CONFIG_EXAMPLES_TIFF is not set
++# CONFIG_EXAMPLES_TOUCHSCREEN is not set
++# CONFIG_EXAMPLES_UDP is not set
++# CONFIG_EXAMPLES_WEBSERVER is not set
++# CONFIG_EXAMPLES_USBSERIAL is not set
++# CONFIG_EXAMPLES_USBTERM is not set
++# CONFIG_EXAMPLES_WATCHDOG is not set
++# CONFIG_EXAMPLES_VERSION is not set
++
++#
++# Graphics Support
++#
++# CONFIG_TIFF is not set
++
++#
++# Interpreters
++#
++# CONFIG_INTERPRETERS_FICL is not set
++# CONFIG_INTERPRETERS_PCODE is not set
++
++#
++# Network Utilities
++#
++
++#
++# Networking Utilities
++#
++# CONFIG_NETUTILS_JSON is not set
++
++#
++# NSH Library
++#
++CONFIG_NSH_LIBRARY=y
++
++#
++# Command Line Configuration
++#
++CONFIG_NSH_READLINE=y
++# CONFIG_NSH_CLE is not set
++CONFIG_NSH_LINELEN=64
++# CONFIG_NSH_DISABLE_SEMICOLON is not set
++# CONFIG_NSH_CMDPARMS is not set
++CONFIG_NSH_MAXARGUMENTS=6
++# CONFIG_NSH_ARGCAT is not set
++CONFIG_NSH_NESTDEPTH=3
++# CONFIG_NSH_DISABLEBG is not set
++CONFIG_NSH_BUILTIN_APPS=y
++
++#
++# Disable Individual commands
++#
++# CONFIG_NSH_DISABLE_ADDROUTE is not set
++# CONFIG_NSH_DISABLE_CAT is not set
++# CONFIG_NSH_DISABLE_CD is not set
++# CONFIG_NSH_DISABLE_CP is not set
++# CONFIG_NSH_DISABLE_CMP is not set
++# CONFIG_NSH_DISABLE_DD is not set
++# CONFIG_NSH_DISABLE_DF is not set
++# CONFIG_NSH_DISABLE_DELROUTE is not set
++# CONFIG_NSH_DISABLE_ECHO is not set
++# CONFIG_NSH_DISABLE_EXEC is not set
++# CONFIG_NSH_DISABLE_EXIT is not set
++# CONFIG_NSH_DISABLE_FREE is not set
++# CONFIG_NSH_DISABLE_GET is not set
++# CONFIG_NSH_DISABLE_HELP is not set
++# CONFIG_NSH_DISABLE_HEXDUMP is not set
++# CONFIG_NSH_DISABLE_IFCONFIG is not set
++# CONFIG_NSH_DISABLE_KILL is not set
++# CONFIG_NSH_DISABLE_LOSETUP is not set
++# CONFIG_NSH_DISABLE_LS is not set
++# CONFIG_NSH_DISABLE_MB is not set
++# CONFIG_NSH_DISABLE_MKDIR is not set
++# CONFIG_NSH_DISABLE_MKFIFO is not set
++# CONFIG_NSH_DISABLE_MKRD is not set
++# CONFIG_NSH_DISABLE_MH is not set
++# CONFIG_NSH_DISABLE_MOUNT is not set
++# CONFIG_NSH_DISABLE_MW is not set
++# CONFIG_NSH_DISABLE_PS is not set
++# CONFIG_NSH_DISABLE_PUT is not set
++# CONFIG_NSH_DISABLE_PWD is not set
++# CONFIG_NSH_DISABLE_RM is not set
++# CONFIG_NSH_DISABLE_RMDIR is not set
++# CONFIG_NSH_DISABLE_SET is not set
++# CONFIG_NSH_DISABLE_SH is not set
++# CONFIG_NSH_DISABLE_SLEEP is not set
++# CONFIG_NSH_DISABLE_TEST is not set
++# CONFIG_NSH_DISABLE_UMOUNT is not set
++# CONFIG_NSH_DISABLE_UNSET is not set
++# CONFIG_NSH_DISABLE_USLEEP is not set
++# CONFIG_NSH_DISABLE_WGET is not set
++# CONFIG_NSH_DISABLE_XD is not set
++
++#
++# Configure Command Options
++#
++# CONFIG_NSH_CMDOPT_DF_H is not set
++CONFIG_NSH_CODECS_BUFSIZE=128
++# CONFIG_NSH_CMDOPT_HEXDUMP is not set
++CONFIG_NSH_FILEIOSIZE=512
++
++#
++# Scripting Support
++#
++# CONFIG_NSH_DISABLESCRIPT is not set
++# CONFIG_NSH_DISABLE_ITEF is not set
++# CONFIG_NSH_DISABLE_LOOPS is not set
++
++#
++# Console Configuration
++#
++CONFIG_NSH_CONSOLE=y
++# CONFIG_NSH_ALTCONDEV is not set
++# CONFIG_NSH_ARCHINIT is not set
++
++#
++# NxWidgets/NxWM
++#
++
++#
++# Platform-specific Support
++#
++# CONFIG_PLATFORM_CONFIGDATA is not set
++
++#
++# System Libraries and NSH Add-Ons
++#
++
++#
++# Custom Free Memory Command
++#
++# CONFIG_SYSTEM_FREE is not set
++
++#
++# EMACS-like Command Line Editor
++#
++# CONFIG_SYSTEM_CLE is not set
++
++#
++# FLASH Program Installation
++#
++# CONFIG_SYSTEM_INSTALL is not set
++
++#
++# FLASH Erase-all Command
++#
++
++#
++# Intel HEX to binary conversion
++#
++# CONFIG_SYSTEM_HEX2BIN is not set
++
++#
++# I2C tool
++#
++# CONFIG_SYSTEM_I2CTOOL is not set
++
++#
++# INI File Parser
++#
++# CONFIG_SYSTEM_INIFILE is not set
++
++#
++# NxPlayer media player library / command Line
++#
++# CONFIG_SYSTEM_NXPLAYER is not set
++
++#
++# RAM test
++#
++# CONFIG_SYSTEM_RAMTEST is not set
++
++#
++# readline()
++#
++CONFIG_SYSTEM_READLINE=y
++CONFIG_READLINE_ECHO=y
++
++#
++# P-Code Support
++#
++
++#
++# PHY Tool
++#
++
++#
++# Power Off
++#
++# CONFIG_SYSTEM_POWEROFF is not set
++
++#
++# RAMTRON
++#
++# CONFIG_SYSTEM_RAMTRON is not set
++
++#
++# SD Card
++#
++# CONFIG_SYSTEM_SDCARD is not set
++
++#
++# Sudoku
++#
++# CONFIG_SYSTEM_SUDOKU is not set
++
++#
++# Sysinfo
++#
++CONFIG_SYSTEM_SYSINFO=y
++CONFIG_SYSTEM_SYSINFO_STACKSIZE=1024
++
++#
++# VI Work-Alike Editor
++#
++# CONFIG_SYSTEM_VI is not set
++
++#
++# Stack Monitor
++#
++
++#
++# USB CDC/ACM Device Commands
++#
++
++#
++# USB Composite Device Commands
++#
++
++#
++# USB Mass Storage Device Commands
++#
++
++#
++# USB Monitor
++#
++
++#
++# Zmodem Commands
++#
++# CONFIG_SYSTEM_ZMODEM is not set
++
++#
++# Mods
++#
++CONFIG_MODS_DIET=y
++# CONFIG_I2S_TUNNEL is not set
++# CONFIG_MODS_SPI_REG is not set
+diff --git a/nuttx/configs/hdk/muc/dtv/setenv.sh b/nuttx/configs/hdk/muc/dtv/setenv.sh
+new file mode 100755
+index 0000000..0b9cb6b
+--- /dev/null
++++ b/nuttx/configs/hdk/muc/dtv/setenv.sh
+@@ -0,0 +1,60 @@
++#!/bin/bash
++#
++#   Copyright (C) 2011-2012 Gregory Nutt. All rights reserved.
++#   Author: Gregory Nutt <gnutt@nuttx.org>
++#
++# Redistribution and use in source and binary forms, with or without
++# modification, are permitted provided that the following conditions
++# are met:
++#
++# 1. Redistributions of source code must retain the above copyright
++#    notice, this list of conditions and the following disclaimer.
++# 2. Redistributions in binary form must reproduce the above copyright
++#    notice, this list of conditions and the following disclaimer in
++#    the documentation and/or other materials provided with the
++#    distribution.
++# 3. Neither the name NuttX nor the names of its contributors may be
++#    used to endorse or promote products derived from this software
++#    without specific prior written permission.
++#
++# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
++# "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
++# LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
++# FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
++# COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
++# INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
++# BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS
++# OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
++# AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
++# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
++# ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
++# POSSIBILITY OF SUCH DAMAGE.
++#
++
++if [ "$_" = "$0" ] ; then
++  echo "You must source this script, not run it!" 1>&2
++  exit 1
++fi
++
++WD=`pwd`
++if [ ! -x "setenv.sh" ]; then
++  echo "This script must be executed from the top-level NuttX build directory"
++  exit 1
++fi
++
++if [ -z "${PATH_ORIG}" ]; then
++  export PATH_ORIG="${PATH}"
++fi
++
++export NUTTX_CONFIG_BASE=hdk/muc/base_powered
++
++# this will need to be updated based on your configuration
++if [ -z "${ANDROID_BUILD_TOP}" ]; then
++export TOOLCHAIN_BIN=/usr/local/gcc-arm-none-eabi-4_8-2014q3/bin
++export PATH="${TOOLCHAIN_BIN}:/sbin:/usr/sbin:${PATH_ORIG}"
++else
++export CROSSDEV=arm-eabi-
++export ARCROSSDEV=arm-eabi-
++fi
++
++alias flash="openocd -f board/moto_mdk_muc.cfg -c \"program $WD/nuttx.tftf 0x08008000 reset exit\""
+diff --git a/nuttx/configs/hdk/muc/include/mods.h b/nuttx/configs/hdk/muc/include/mods.h
+index fe9f17c..779e8be 100644
+--- a/nuttx/configs/hdk/muc/include/mods.h
++++ b/nuttx/configs/hdk/muc/include/mods.h
+@@ -102,6 +102,9 @@
+ #define GPIO_MODS_BASE_ATTACH    GPIO_MODS_SL_BPLUS_AIN
+ 
+ #define GPIO_MODS_DEMO_ENABLE    CALC_GPIO_NUM('G', 10)
++#define GPIO_MODS_DEMO_1    	 CALC_GPIO_NUM('G', 10)
++#define GPIO_MODS_DEMO_2    	 CALC_GPIO_NUM('G', 12)
++#define GPIO_MODS_BUTTON         CALC_GPIO_NUM('G',  9)
+ #define GPIO_MODS_RST_LS         CALC_GPIO_NUM('H',  0)
+ 
+ #if IS_BATT_PCARD
+diff --git a/nuttx/configs/hdk/muc/src/stm32_modsraw_blinky.c b/nuttx/configs/hdk/muc/src/stm32_modsraw_blinky.c
+index bc32a15..d035ef8 100644
+--- a/nuttx/configs/hdk/muc/src/stm32_modsraw_blinky.c
++++ b/nuttx/configs/hdk/muc/src/stm32_modsraw_blinky.c
+@@ -2,7 +2,7 @@
+  * Copyright (c) 2016 Motorola Mobility, LLC.
+  * All rights reserved.
+  *
+- * Redistribution and use in source and binary forms, with or without
++  * Redistribution and use in source and binary forms, with or without
+  * modification, are permitted provided that the following conditions are met:
+  * 1. Redistributions of source code must retain the above copyright notice,
+  * this list of conditions and the following disclaimer.
+@@ -52,6 +52,11 @@
+ 
+ static struct stm32_tim_dev_s *tim_dev;
+ 
++struct blinky_info {
++    struct device *gDevice;
++    raw_send_callback gCallback;
++};
++
+ static int blinky_timer_handler(int irq, FAR void *context)
+ {
+     uint8_t new_val;
+@@ -68,7 +73,9 @@ static int blinky_timer_handler(int irq, FAR void *context)
+ 
+ static void blinky_timer_start(void)
+ {
+-    gpio_set_value(GPIO_MODS_DEMO_ENABLE, 1);
++
++    //gpio_set_value(GPIO_MODS_DEMO_ENABLE, 1);
++    gpio_set_value(GPIO_MODS_LED_DRV_3, 1);
+ 
+     if (!tim_dev) {
+         dbg("BLINKY\n");
+@@ -88,8 +95,10 @@ static void blinky_timer_start(void)
+ }
+ 
+ static void blinky_timer_stop(void)
+-{
+-    gpio_set_value(GPIO_MODS_DEMO_ENABLE, 0);
++{   
++    
++    //gpio_set_value(GPIO_MODS_DEMO_ENABLE, 0);
++    gpio_set_value(GPIO_MODS_LED_DRV_3, 0);
+ 
+     if (tim_dev) {
+         dbg("STOP\n");
+@@ -104,39 +113,207 @@ static void blinky_timer_stop(void)
+     }
+ }
+ 
+-static int blinky_recv(struct device *dev, uint32_t len, uint8_t data[])
++static int read_button_state(void) 
+ {
+-    if (len == 0)
+-        return -EINVAL;
++    int value = stm32_gpioread(GPIO_MODS_BUTTON);
++    dbg("Button State %d \n", value);
++    return value;
++}
++
++
++/**
++ * Call the base raw device to send our data
++ */ 
++static int blinky_send(struct device *dev, uint32_t len, uint8_t data[])
++{
++    
++    struct blinky_info *info = NULL;
++
++    uint8_t *resp_msg;
++
++    if (len == 0) return -EINVAL;
++
++    if (!dev || !device_get_private(dev)) {
++        return -ENODEV;
++    }
++    info = device_get_private(dev);
++
++    // allocate memory for response message 
++    resp_msg = zalloc(len);
++    if (!resp_msg) {
++        return -ENOMEM;
++    }
++
++    // copy payload data and send the message
++    memcpy((void *)resp_msg, data, len);
++
++    if (info->gCallback) {
++        info->gCallback(info->gDevice, len, resp_msg);
++    }
++    free(resp_msg); 
++    return OK;
++}
++
++/**
++ * Call the base raw device to send our data
++ */
++static int blinky_send_bulk(struct device *dev, uint32_t len)
++{
++
++    struct blinky_info *info = NULL;
++
++    uint8_t *resp_msg;
++
++    if (len == 0) return -EINVAL;
++
++    if (!dev || !device_get_private(dev)) {
++        return -ENODEV;
++    }
++    info = device_get_private(dev);
++
++    // allocate memory for response message 
++    resp_msg = zalloc(len);
++    if (!resp_msg) {
++        return -ENOMEM;
++    }
++
++    // copy payload data and send the message
++    //memcpy((void *)&resp_msg, data, len);
++
++    if (info->gCallback) {
++        info->gCallback(info->gDevice, len, resp_msg);
++    }
++    free(resp_msg);
++    return OK;
++}
++
++static int blinky_set_gpio(uint8_t gpio_ind, uint8_t value) 
++{
++    int gpio;
++    if (gpio_ind == 2 || gpio_ind == '2')
++       gpio = GPIO_MODS_DEMO_1;
++    else if (gpio_ind == 3 || gpio_ind == '3')
++       gpio = GPIO_MODS_DEMO_2;
++    else 
++       return -EINVAL;
+ 
+-    if (data[0] == 0 || data[0] == '0')
+-        blinky_timer_stop();
+-    else
+-        blinky_timer_start();
++    int enabled = (value == 1 || value == '1');
++	
++    gpio_set_value(gpio, enabled);
++
++    dbg("SET GPIO %d %d \n", gpio, enabled);
+ 
+     return 0;
+ }
+ 
++static int pow(int base, int exp) {
++  int res = 1;
++  int i;
++  for(i = 0; i < exp; i++)
++    res *= base;
++  return res;
++}
++
++
++static int blinky_recv(struct device *dev, uint32_t len, uint8_t data[])
++{
++   
++    uint8_t msg[] = {0xFF, 0xFA};
++    int res = OK;
++    
++    if (len == 1) {
++    	if (data[0] == 0 || data[0] == '0')
++            blinky_timer_stop();
++    	else if (data[0] == 1 || data[0] == '1')
++            blinky_timer_start();
++        else if (data[0] == 5 || data[0] == '5') { 
++            msg[0] = read_button_state();
++            res = blinky_send(dev, 1, msg);
++        }
++        return res;
++    } else if (len == 2) {
++        return blinky_set_gpio(data[0], data[1]);
++    } else if (len == 3) {
++        if (data[0] == 4 || data[0] == '4') {
++            int i = 0;
++            dbg("STRESS %d %d \n", data[1], data[2]);
++            for(i = 0; i < data[2]; i++) {
++                res = blinky_send_bulk(dev, pow(2, data[1]));
++            }
++            return res;
++        } 
++    } 
++    return -EINVAL;
++}
++
+ static int blinky_register_callback(struct device *dev,
+                                     raw_send_callback callback)
+ {
+-    /* Nothing to do */
++
++    struct blinky_info *info = NULL;
++    if (!dev || !device_get_private(dev)) {
++        return -ENODEV;
++    }
++    info = device_get_private(dev);
++
++    info->gCallback = callback;
+     return 0;
+ }
+ 
+ static int blinky_unregister_callback(struct device *dev)
+ {
+-    /* Nothing to do */
++    struct blinky_info *info = NULL;
++
++    if (!dev || !device_get_private(dev)) {
++        return -ENODEV;
++    }
++    info = device_get_private(dev);
++
++    info->gCallback = NULL;	
+     return 0;
+ }
+ 
+ static int blinky_probe(struct device *dev)
+ {
+     gpio_direction_out(GPIO_MODS_LED_DRV_3, LED_OFF);
+-    gpio_direction_out(GPIO_MODS_DEMO_ENABLE, 0);
++    gpio_direction_out(GPIO_MODS_DEMO_1, 0);
++    gpio_direction_out(GPIO_MODS_DEMO_2, 1);
++    gpio_direction_in(GPIO_MODS_BUTTON);
++
++    struct blinky_info *info;
++
++    if (!dev) {
++        return -EINVAL;
++    }
++
++    info = zalloc(sizeof(*info));
++    if (!info) {
++        return -ENOMEM;
++    }
++
++    info->gDevice = dev;
++    device_set_private(dev, info);
++
+     return 0;
+ }
+ 
++/**
++ * remove function called when device is unregistered.
++ */
++static void blinky_remove(struct device *dev)
++{
++    struct blinky_info *info = NULL;
++
++    if (!dev || !device_get_private(dev)) {
++        return;
++    }
++    info = device_get_private(dev);
++
++    free(info);
++    device_set_private(dev, NULL);
++}
++
++
+ static struct device_raw_type_ops blinky_type_ops = {
+     .recv = blinky_recv,
+     .register_callback = blinky_register_callback,
+@@ -145,6 +322,7 @@ static struct device_raw_type_ops blinky_type_ops = {
+ 
+ static struct device_driver_ops blinky_driver_ops = {
+     .probe = blinky_probe,
++    .remove = blinky_remove, 
+     .type_ops = &blinky_type_ops,
+ };
+ 
+diff --git a/nuttx/drivers/fusb302.c b/nuttx/drivers/fusb302.c
+index 35ac95a..ceacc9a 100644
+--- a/nuttx/drivers/fusb302.c
++++ b/nuttx/drivers/fusb302.c
+@@ -591,10 +591,10 @@ static void fusb302_update_state(struct fusb302_dev_s *info)
+     case USB_STATE_UNATTACHED:
+         switch (new_attach) {
+             case ATTACH_TYPE_NONE:
+-                vdbg("unattached -> unattached\n");
++                dbg("unattached -> unattached\n");
+                 break;
+             case ATTACH_TYPE_SNK:
+-                vdbg("unattached -> wait_snk\n");
++                dbg("unattached -> wait_snk\n");
+                 info->state = USB_STATE_ATTACHED_WAIT_SNK;
+                 fusb302_write_connected_snk(cc);
+ 
+@@ -604,7 +604,7 @@ static void fusb302_update_state(struct fusb302_dev_s *info)
+                 }
+                 break;
+             case ATTACH_TYPE_SRC:
+-                vdbg("unattached -> wait_src\n");
++                dbg("unattached -> wait_src\n");
+                 info->state = USB_STATE_ATTACHED_WAIT_SRC;
+                 fusb302_write_connected_src(cc);
+ 
+@@ -614,7 +614,7 @@ static void fusb302_update_state(struct fusb302_dev_s *info)
+                 }
+                 break;
+             case ATTACH_TYPE_ACC:
+-                vdbg("unattached -> acc\n");
++                dbg("unattached -> acc\n");
+             default:
+                 ASSERT(FALSE);
+                 break;
+@@ -624,18 +624,18 @@ static void fusb302_update_state(struct fusb302_dev_s *info)
+     case USB_STATE_ATTACHED_WAIT_SNK:
+         switch (new_attach) {
+             case ATTACH_TYPE_NONE:
+-                vdbg("wait_snk -> unattached\n");
++                dbg("wait_snk -> unattached\n");
+                 info->state = USB_STATE_UNATTACHED;
+                 fusb302_write_disconnected();
+                 break;
+             case ATTACH_TYPE_SNK:
+-                vdbg("wait_snk -> snk\n");
++                dbg("wait_snk -> snk\n");
+                 info->state = USB_STATE_ATTACHED_SNK;
+                 fusb302_notify_device_usb_ext(info);
+                 fusb302_notify_device_ext_power(info);
+                 break;
+             case ATTACH_TYPE_SRC:
+-                vdbg("wait_snk -> wait_src\n");
++                dbg("wait_snk -> wait_src\n");
+                 info->state = USB_STATE_ATTACHED_WAIT_SRC;
+                 fusb302_write_connected_src(cc);
+ 
+@@ -645,7 +645,7 @@ static void fusb302_update_state(struct fusb302_dev_s *info)
+                 }
+                 break;
+             case ATTACH_TYPE_ACC:
+-                vdbg("wait_snk -> acc\n");
++                dbg("wait_snk -> acc\n");
+             default:
+                 ASSERT(FALSE);
+                 break;
+@@ -655,12 +655,12 @@ static void fusb302_update_state(struct fusb302_dev_s *info)
+     case USB_STATE_ATTACHED_WAIT_SRC:
+         switch (new_attach) {
+             case ATTACH_TYPE_NONE:
+-                vdbg("wait_src -> unattached\n");
++                dbg("wait_src -> unattached\n");
+                 info->state = USB_STATE_UNATTACHED;
+                 fusb302_write_disconnected();
+                 break;
+             case ATTACH_TYPE_SNK:
+-                vdbg("wait_src -> wait_snk\n");
++                dbg("wait_src -> wait_snk\n");
+                 info->state = USB_STATE_ATTACHED_WAIT_SNK;
+                 fusb302_write_connected_snk(cc);
+ 
+@@ -670,7 +670,7 @@ static void fusb302_update_state(struct fusb302_dev_s *info)
+                 }
+                 break;
+             case ATTACH_TYPE_SRC:
+-                vdbg("wait_src -> src\n");
++                dbg("wait_src -> src\n");
+                 info->state = USB_STATE_ATTACHED_SRC;
+                 fusb302_notify_device_usb_ext(info);
+                 fusb302_notify_device_ext_power(info);
+@@ -678,7 +678,7 @@ static void fusb302_update_state(struct fusb302_dev_s *info)
+                 gpio_set_value(info->gpio_vbus_en, 1);
+                 break;
+             case ATTACH_TYPE_ACC:
+-                vdbg("wait_src -> acc\n");
++                dbg("wait_src -> acc\n");
+             default:
+                 ASSERT(FALSE);
+                 break;
+@@ -693,17 +693,17 @@ static void fusb302_update_state(struct fusb302_dev_s *info)
+ 
+         switch (new_attach) {
+             case ATTACH_TYPE_NONE:
+-                vdbg("snk -> unattached\n");
++                dbg("snk -> unattached\n");
+                 info->state = USB_STATE_UNATTACHED;
+                 fusb302_write_disconnected();
+                 fusb302_notify_device_usb_ext(info);
+                 fusb302_notify_device_ext_power(info);
+                 break;
+             case ATTACH_TYPE_SNK:
+-                vdbg("snk -> snk\n");
++                dbg("snk -> snk\n");
+                 break;
+             case ATTACH_TYPE_SRC:
+-                vdbg("snk -> wait_src\n");
++                dbg("snk -> wait_src\n");
+                 info->state = USB_STATE_ATTACHED_WAIT_SRC;
+                 fusb302_write_connected_src(cc);
+ 
+@@ -713,7 +713,7 @@ static void fusb302_update_state(struct fusb302_dev_s *info)
+                 }
+                 break;
+             case ATTACH_TYPE_ACC:
+-                vdbg("snk -> acc\n");
++                dbg("snk -> acc\n");
+             default:
+                 ASSERT(FALSE);
+                 break;
+@@ -723,7 +723,7 @@ static void fusb302_update_state(struct fusb302_dev_s *info)
+     case USB_STATE_ATTACHED_SRC:
+         switch (new_attach) {
+             case ATTACH_TYPE_NONE:
+-                vdbg("src -> unattached\n");
++                dbg("src -> unattached\n");
+                 info->state = USB_STATE_UNATTACHED;
+                 fusb302_write_disconnected();
+                 fusb302_notify_device_usb_ext(info);
+@@ -731,7 +731,7 @@ static void fusb302_update_state(struct fusb302_dev_s *info)
+                 gpio_set_value(info->gpio_vbus_en, 0);
+                 break;
+             case ATTACH_TYPE_SNK:
+-                vdbg("src -> wait_snk\n");
++                dbg("src -> wait_snk\n");
+                 info->state = USB_STATE_ATTACHED_WAIT_SNK;
+                 fusb302_write_connected_snk(cc);
+ 
+@@ -743,10 +743,10 @@ static void fusb302_update_state(struct fusb302_dev_s *info)
+                 }
+                 break;
+             case ATTACH_TYPE_SRC:
+-                vdbg("src -> src\n");
++                dbg("src -> src\n");
+                 break;
+             case ATTACH_TYPE_ACC:
+-                vdbg("src -> acc\n");
++                dbg("src -> acc\n");
+             default:
+                 ASSERT(FALSE);
+                 break;
+@@ -797,6 +797,8 @@ int fusb302_register(int int_n, int gpio_vbus_en)
+     int ret;
+     struct fusb302_dev_s *info;
+ 
++    dbg("registering fusb302...\n");
++
+     info = kmm_zalloc(sizeof(*fusb302_info));
+     if (!info) {
+         dbg("failed to allocate info\n");
+@@ -879,12 +881,14 @@ int fusb302_usb_ext_unregister_callback(struct device *dev)
+ 
+ static uint8_t fusb302_usb_ext_get_attached(void)
+ {
++    dbg("fusb302_usb_ext_get_attached\n");
+     return (fusb302_get_state() == USB_STATE_ATTACHED_SRC ||
+             fusb302_get_state() == USB_STATE_ATTACHED_SNK);
+ }
+ 
+ static uint8_t fusb302_usb_ext_get_protocol(void)
+ {
++    dbg("fusb302_usb_ext_get_protocol\n");
+     return GB_USB_EXT_PROTOCOL_3_1;
+ }
+ 
+@@ -901,6 +905,9 @@ static uint8_t fusb302_usb_ext_get_type(void)
+ 
+ static int fusb302_usb_ext_open(struct device *dev)
+ {
++
++   dbg("fusb302_usb_ext_open...\n");
++
+     return 0;
+ }
+ 
+@@ -912,6 +919,8 @@ static int fusb302_usb_ext_probe(struct device *dev)
+ {
+     struct device_resource *path_res;
+ 
++    dbg("fusb302_usb_ext_probe...\n");
++
+     fusb302_info->usb_ext.dev = dev;
+     path_res = device_resource_get_by_name(dev, DEVICE_RESOURCE_TYPE_REGS, "path");
+     if (path_res)
+@@ -963,6 +972,8 @@ static int fusb302_ext_power_register_callback(struct device *dev,
+     if (!info)
+         return 0;
+ 
++    dbg("fusb302_ext_power_register_callback\n");
++
+     /* get the initial state of the connection */
+     info->state = fusb302_get_state();
+ 
+@@ -1004,6 +1015,8 @@ static int fusb302_ext_power_get_output(struct device *dev,
+ 
+ static int fusb302_ext_power_open(struct device *dev)
+ {
++
++    dbg("fusb302_ext_power_open\n");
+     return 0;
+ }
+ 
+@@ -1013,6 +1026,8 @@ static void fusb302_ext_power_close(struct device *dev)
+ 
+ static int fusb302_ext_power_probe(struct device *dev)
+ {
++
++    dbg("registering fusb302_ext_power...\n");
+     device_set_private(dev, fusb302_info);
+     fusb302_info->ext_power.dev = dev;
+     return 0;

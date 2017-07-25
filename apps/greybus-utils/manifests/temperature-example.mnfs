@@ -12,11 +12,11 @@ product-string-id = 2
 
 ; Interface vendor string (id can't be 0)
 [string-descriptor 1]
-string = Eldorado Test
+string = Motorola Mobility, LLC
 
 ; Interface product string (id can't be 0)
 [string-descriptor 2]
-string = MDK-DTV
+string = TEMPERATURE-EXAMPLE
 
 ; Control protocol on CPort 0
 [cport-descriptor 0]
@@ -51,7 +51,7 @@ protocol = 0xef
 class = 0x08
 
 ; RAW interface on CPort 4
-[cport-descriptor 4]
+[cport-descriptor 1]
 bundle = 3
 protocol = 0xfe
 

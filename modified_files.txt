@@ -1,0 +1,46 @@
+    Sensor mod files. First commit
+
+apps/greybus-utils/manifests/hdk-blinky.mnfs
+apps/greybus-utils/manifests/hdk-dtv.mnfs
+apps/greybus-utils/manifests/hdk-gpio1.mnfs
+apps/greybus-utils/manifests/hdk-temperature.mnfs
+apps/greybus-utils/manifests/hdk-test1.mnfs
+apps/greybus-utils/manifests/hdk-testadc.mnfs
+apps/greybus-utils/manifests/temperature-example.mnfs
+firmware_patch_1.diff
+misc/tools/kconfig-frontends/configure
+nuttx/build.sh
+nuttx/configs/hdk/muc/Kconfig
+nuttx/configs/hdk/muc/blinky/defconfig
+nuttx/configs/hdk/muc/dtv/Make.defs
+nuttx/configs/hdk/muc/dtv/defconfig
+nuttx/configs/hdk/muc/dtv/setenv.sh
+nuttx/configs/hdk/muc/example-temperature/Make.defs
+nuttx/configs/hdk/muc/example-temperature/defconfig
+nuttx/configs/hdk/muc/example-temperature/setenv.sh
+nuttx/configs/hdk/muc/gpio1/Make.defs
+nuttx/configs/hdk/muc/gpio1/defconfig
+nuttx/configs/hdk/muc/gpio1/setenv.sh
+nuttx/configs/hdk/muc/include/mods.h
+nuttx/configs/hdk/muc/include/th02.h
+nuttx/configs/hdk/muc/src/Makefile
+nuttx/configs/hdk/muc/src/htu21d .H
+nuttx/configs/hdk/muc/src/htu21d .h
+nuttx/configs/hdk/muc/src/htu21d.c
+nuttx/configs/hdk/muc/src/stm32_boot.c
+nuttx/configs/hdk/muc/src/stm32_modsraw.c
+nuttx/configs/hdk/muc/src/stm32_modsraw_blinky.c
+nuttx/configs/hdk/muc/src/stm32_modsraw_gpio1.c
+nuttx/configs/hdk/muc/src/stm32_modsraw_temperature.c
+nuttx/configs/hdk/muc/src/stm32_modsraw_test1.c
+nuttx/configs/hdk/muc/src/stm32_modsraw_testadc.c
+nuttx/configs/hdk/muc/src/stm32_test1.c
+nuttx/configs/hdk/muc/src/th02.c
+nuttx/configs/hdk/muc/src/th02.h
+nuttx/configs/hdk/muc/test1/Make.defs
+nuttx/configs/hdk/muc/test1/defconfig
+nuttx/configs/hdk/muc/test1/setenv.sh
+nuttx/configs/hdk/muc/testadc/Make.defs
+nuttx/configs/hdk/muc/testadc/defconfig
+nuttx/configs/hdk/muc/testadc/setenv.sh
+nuttx/drivers/fusb302.c

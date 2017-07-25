@@ -12,7 +12,7 @@ product-string-id = 2
 
 ; Interface vendor string (id can't be 0)
 [string-descriptor 1]
-string = Eldorado Test
+string = Motorola Mobility, LLC
 
 ; Interface product string (id can't be 0)
 [string-descriptor 2]
@@ -58,3 +58,13 @@ protocol = 0xfe
 ; RAW Bundle 3
 [bundle-descriptor 3]
 class = 0xfe
+
+; USB-EXT protocol on CPort 5
+[cport-descriptor 5]
+bundle = 4
+protocol = 0xec
+
+; Bundle 4
+[bundle-descriptor 4]
+class = 0xec
+
