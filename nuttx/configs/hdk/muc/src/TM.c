@@ -23,13 +23,15 @@
 extern "C" {
 #endif
 
-#include "TM.h"
-#include "EH.h"
-#include "HAL.h"
-#include "vm.h"
+// #include "ARCH_serial.h"
 
-#include "stdutils.h"
-#include "inttypes.h"
+#include <TM.h>
+#include <EH.h>
+#include <HAL.h>
+#include <vm.h>
+
+#include <stdutils.h>
+#include <inttypes.h>
 
 //#include <stdio.h>
 //#include <stdint.h>
@@ -107,12 +109,12 @@ void hold(void) {
   //
 }
 
-void parse_Command(volatile char * command) {
+void parse_Command(volatile char * command_) {
   has_command = 0;
-  if (!strcmpsz((char *)command,"RD", 2)) {
+  if (!strcmpsz((char *)command_,"RD", 2)) {
     print("RD-OK");
     state = receiving_sz;
-  } else if (!strcmpsz((char *)command,"RS", 2)) {
+  } else if (!strcmpsz((char *)command_,"RS", 2)) {
     print("RS-OK");
     state = reseting;
   } else {

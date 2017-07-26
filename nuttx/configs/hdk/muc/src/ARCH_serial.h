@@ -22,8 +22,10 @@
 extern "C" {
 #endif
 	
-#ifndef ARCH_SERIAL	
-#define ARCH_SERIAL
+#ifndef ARCH_SERIAL_H	
+#define ARCH_SERIAL_H
+
+#include <stdio.h>
 #include <stdint.h>
 
 #define BUFFER_SZ 2
@@ -37,8 +39,8 @@ void enable_commands(void);
 void send_byte(unsigned char byte);
 char read_byte(void);	
 void serial_configure(unsigned int baudrate); //Allow user to enable and disable interruptions later
-void printnum(int32_t number);
-void print(char *str);
+void printnum(uint32_t number);
+void print(const char *str);
 
 #endif //ARCH_SERIAL
 	

@@ -78,11 +78,6 @@ extern "C" {
 #include <stdio.h>
 #endif
 
-/*Defined peripherals ids:
-	See file on doc/CallsDefinition.txt
-*/
-
-/*
 uint8_t hal_call(uint32_t sensid, char identifier[])//Call to hardware I/O
 {
 #if PRINTING

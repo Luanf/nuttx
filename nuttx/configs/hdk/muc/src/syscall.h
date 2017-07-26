@@ -32,8 +32,8 @@ extern "C" {
 #include "vm.h"
 #include <stdint.h>
 
-#ifndef SYSCALL
-#define SYSCALL
+#ifndef SYSCALL_H
+#define SYSCALL_H
 
 uint8_t syscall(uint8_t trap_code);
 

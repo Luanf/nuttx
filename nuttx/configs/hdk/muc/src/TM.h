@@ -26,6 +26,8 @@ extern "C" {
 #ifndef TM_H
 #define TM_H
 
+#include <ARCH_serial.h>
+
 /********************************************************************
 ** tm_init(void)                                                   **
 **                                                                 **
@@ -36,6 +38,13 @@ extern "C" {
 ********************************************************************/
 
 void tm_init(void);
+
+// void idle(void);
+// void receiving_sz(void);
+// void receiving_x(void);
+// void executing(void);
+// void reseting(void);
+// void hold(void);
 
 #endif // TM_H
 

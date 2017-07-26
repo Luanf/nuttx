@@ -23,8 +23,8 @@ extern "C" {
 #endif
     
 
-#ifndef CONFIG
-#define CONFIG
+#ifndef CONFIG_H
+#define CONFIG_H
 
 /*Debuging and testing info*/
 #define DEBUGING 0
@@ -36,7 +36,7 @@ extern "C" {
 
 /*Selects which arch will be used*/
 #if ARCH
-#include "i386_OS.h"
+#include "ARCH_serial.h"
 #else
 #endif
 /*-------------------------------*/

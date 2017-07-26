@@ -81,8 +81,6 @@ uint32_t PC = 0;
 uint32_t nPC = 4;
 uint32_t count = 0;
 
-comm_call_return_t comm_call_return_id = { .component_name = "", .trait_name = "", .state_name = ""};
-
 //int32_t* user_int32_buffer = NULL;
 //float* user_float_buffer = NULL;
 char* user_string_buffer = NULL;
@@ -97,7 +95,7 @@ void advance_pc(int32_t offset)
 uint32_t HI = 0, LO = 0;
 uint32_t offset = 4;
 uint8_t halted = 0;
-// uint8_t held = 0;
+uint8_t held = 0;
 
 void vm_init(uint32_t newPC)
 {
@@ -110,9 +108,9 @@ void vm_init(uint32_t newPC)
 	halted = 0;
 }
 
-// void release(void) {
-// 	held = 0;
-// }
+void release(void) {
+	held = 0;
+}
 
 char* my_itoa(uint32_t val, uint32_t base)
 {
@@ -765,14 +763,14 @@ int8_t vm_cpu(void)
 	return 0;
 }
 
-uint32_t fetch(uint32_t PC)
+uint32_t fetch(uint32_t PC_)
 {
 	// printf(">>count :\t %u\n", count++);
 	// printf(">>PC    :\t %u\n", PC);
 	// printf(">>VM[PC]:\t %u\n", VM_memory[PC]);
-	uint32_t ret_val  = ((uint32_t)VM_memory[PC + 0] << 24);
-	ret_val	= ret_val | ((uint32_t)VM_memory[PC + 1] << 16);
-	ret_val	= ret_val | ((uint32_t)VM_memory[PC + 2] <<  8);
-	ret_val	= ret_val | ((uint32_t)VM_memory[PC + 3] <<  0);
+	uint32_t ret_val  = ((uint32_t)VM_memory[PC_ + 0] << 24);
+	ret_val	= ret_val | ((uint32_t)VM_memory[PC_ + 1] << 16);
+	ret_val	= ret_val | ((uint32_t)VM_memory[PC_ + 2] <<  8);
+	ret_val	= ret_val | ((uint32_t)VM_memory[PC_ + 3] <<  0);
 	return ret_val;
 }

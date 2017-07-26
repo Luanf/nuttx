@@ -23,16 +23,16 @@
 extern "C" {
 #endif
 
-#include "EH.h"
+#include <EH.h>
 #include "vm.h"
-#include "HALL.h"
+#include "HAL.h"
 
 #include <stdio.h>
 #include <stdutils.h>
 
 uint32_t ehvec[EHVECSZ] = {0};
 uint8_t vec_size = 0;
-new_event ehqueue[EHQUEUESZ] = {0};
+new_event ehqueue[EHQUEUESZ] = {{0}};
 volatile uint8_t queue_init = 0;
 volatile uint8_t queue_size = 0;
 volatile uint8_t timer_flag = 0;

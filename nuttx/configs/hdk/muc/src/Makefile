@@ -89,6 +89,8 @@ CSRCS += syscall.c
 CSRCS += EH.c
 CSRCS += TM.c
 CSRCS += HAL.c
+CSRCS += ARCH_serial.c
+CSRCS += stdutils.c
 endif
 
 
