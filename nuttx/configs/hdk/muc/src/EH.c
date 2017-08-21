@@ -24,8 +24,8 @@ extern "C" {
 #endif
 
 #include <EH.h>
-#include "vm.h"
-#include "HAL.h"
+#include <vm.h>
+#include <HAL.h>
 
 #include <stdio.h>
 #include <stdutils.h>
@@ -214,6 +214,7 @@ int8_t insert_event(uint8_t event_id, char * evname)
 	else {
 		return -1; // No space, returns error
 	}
+	return 0;
 }
 
 int8_t consume_event(void) //TODO:For some reason i cannot print from inside this func
@@ -250,30 +251,30 @@ int8_t consume_event(void) //TODO:For some reason i cannot print from inside thi
 
 void timed_polling(void)
 {
-// #if HAS_ULTRASONIC
-// 	// printnum(read_ultrassonic());
-// 	// print("<<\n");
-// 	uint8_t dist = read_ultrassonic();
-// 	if (dist < us_threshold - 1) //Hysteresis
-// 	{
-// 		if (!is_close)
-// 		{
-// 			is_close = 1;
-// 			insert_event(1,"US_S");
-// 		}
-// 	}
-// 	else if (dist > us_threshold + 1)
-// 	{
-// 		if (is_close)
-// 		{
-// 			is_close = 0;
-// 			insert_event(1,"US_F");
-// 		}
-// 	}
-// #endif //HAS_ULTRASONIC
-// #if HAS_ENCODER
-// 	uint8_t count = read_encoder_counter(RIGHT);
-// #endif // HAS_ENCODER
+#if HAS_ULTRASONIC
+	// printnum(read_ultrassonic());
+	// print("<<\n");
+	uint8_t dist = read_ultrassonic();
+	if (dist < us_threshold - 1) //Hysteresis
+	{
+		if (!is_close)
+		{
+			is_close = 1;
+			insert_event(1,"US_S");
+		}
+	}
+	else if (dist > us_threshold + 1)
+	{
+		if (is_close)
+		{
+			is_close = 0;
+			insert_event(1,"US_F");
+		}
+	}
+#endif //HAS_ULTRASONIC
+#if HAS_ENCODER
+	uint8_t count = read_encoder_counter(RIGHT);
+#endif // HAS_ENCODER
 }
 
 #ifdef __cplusplus

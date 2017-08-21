@@ -160,6 +160,8 @@ int8_t insert_event(uint8_t event_id, char * evname); //Generates an event
 ********************************************************************/
 int8_t consume_event(void); //Gets the id of the next event to be handled
 
+void dummy(void);
+
 #endif // EH_H
 
 #ifdef __cplusplus

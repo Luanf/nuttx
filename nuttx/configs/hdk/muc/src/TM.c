@@ -29,9 +29,11 @@ extern "C" {
 #include <EH.h>
 #include <HAL.h>
 #include <vm.h>
+#include <dummy.h>
 
 #include <stdutils.h>
 #include <inttypes.h>
+#include <nuttx/greybus/debug.h>
 
 //#include <stdio.h>
 //#include <stdint.h>
@@ -49,6 +51,7 @@ extern "C" {
 
 uint32_t tm_counter = 0;
 uint16_t tot_size = 0;
+//volatile uint8_t timer_flag = 0;
 
 void idle(void);
 void receiving_sz(void);
@@ -110,6 +113,7 @@ void hold(void) {
 }
 
 void parse_Command(volatile char * command_) {
+
   has_command = 0;
   if (!strcmpsz((char *)command_,"RD", 2)) {
     print("RD-OK");
@@ -124,6 +128,7 @@ void parse_Command(volatile char * command_) {
     send_byte('?');
     send_byte('?');
   }
+
 }
 
 void tm_init(void) {
@@ -134,7 +139,8 @@ void tm_init(void) {
   state = idle;
   
   /*Coisa VM cpu, HAL, EH and TM loop*/
-    while(1)
+  int i = 0;
+    while(i < 10)
     {
     if (has_command) {
       parse_Command(inBuffer);
@@ -142,18 +148,20 @@ void tm_init(void) {
     if(timer_flag)
     { 
       tm_counter++;
-      timed_polling();
+      //timed_polling();
       timer_flag = 0;
 
       if (state == idle) //Doesn't interrupts other functions - All funcs must be non blocking
       {
         state = executing; //TODO: do i really need to set this here, can iterate for nothing :(
-        consume_event();
+       // consume_event();
       }
     }
     state();
+    i++;
     
-  }
+   }
+
 }
   
 #ifdef __cplusplus

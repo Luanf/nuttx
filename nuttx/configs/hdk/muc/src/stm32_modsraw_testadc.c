@@ -316,6 +316,7 @@ static int my_setup(struct device *dev)
     dbg("Running on Setup...24\n");
     adc_devinit();
     enable_TH02(3, 64);
+    
     tm_init();
 
     gpio_direction_out(GPIO_MODS_LED_DRV_3, LED_OFF);

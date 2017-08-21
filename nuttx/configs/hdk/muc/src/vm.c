@@ -75,7 +75,7 @@ uint32_t hand_addr;
 /* Floating-Point Unit condition code flags. */
 // uint8_t fpu_cc = 0;
 /* VM memory vector. */
-uint8_t VM_memory[VM_MEMORY_SZ] = {0};
+uint8_t VM_memory[VM_MEMORY_SZ] = {};
 
 uint32_t PC = 0;
 uint32_t nPC = 4;
@@ -122,6 +122,7 @@ char* my_itoa(uint32_t val, uint32_t base)
 	}
 
 	return &buf[i+1];
+
 }
 
 int8_t vm_cpu(void)
@@ -760,7 +761,7 @@ int8_t vm_cpu(void)
 	}
 	advance_pc(offset);//Advances the PC
 
-	return 0;
+ 	return 0;
 }
 
 uint32_t fetch(uint32_t PC_)
@@ -773,4 +774,5 @@ uint32_t fetch(uint32_t PC_)
 	ret_val	= ret_val | ((uint32_t)VM_memory[PC_ + 2] <<  8);
 	ret_val	= ret_val | ((uint32_t)VM_memory[PC_ + 3] <<  0);
 	return ret_val;
+	return 0;
 }
