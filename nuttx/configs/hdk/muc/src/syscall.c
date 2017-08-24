@@ -28,6 +28,7 @@ extern "C" {
 #endif
 
 #include "syscall.h"
+#include <nuttx/greybus/debug.h>
 #include "HAL.h"
 #include <EH.h>
 #if PRINTING
@@ -36,20 +37,24 @@ extern "C" {
  
 uint8_t syscall(uint8_t trap_code)
 {
+	dbg("Syscall Called!");
 	// printnum(trap_code);
 	// print("trap_code\n");
 	// print("HALOU\n");
 	switch (trap_code)
 	{
 		case 9: {
+			dbg("Case 9\n");
 			hand_addr = RF[3];
 			break;
 		}
 		case 10: { //Exit
+			dbg("Exit\n");
 			return 1; //The vm cpu should stop
 			break;
 		}
 		case 11: { //Stack alloc
+			dbg("Stack Alloc\n");
 			RF[29] = VM_MEMORY_SZ; //Aloca pilha para dado microcontrolador -> pilha vazia, apontando para o fim, tentativa de store sem alocar causara erros
 			RF[30] = RF[29]; //FP = SP
 #if PRINTING
@@ -58,24 +63,29 @@ uint8_t syscall(uint8_t trap_code)
 			break;
 		}
 		case 12: { //Hal Call
+			dbg("Hal Call\n");
 			RF[2] = hal_call(RF[3], (char *)&VM_memory[RF[12]]);
 			break;
 		}
 		case 13: { //Setup Event Handler
+			dbg("Setup Event Handler\n");
 			eh_init();
 			break;
 		}
 		case 14: { //Register Event Handler
+			dbg("Register Event Handler\n");
 			register_handler((uint8_t)RF[4], (uintptr_t)RF[5], (char *)&VM_memory[RF[6]], (void *)&RF[7], RF[8]);
 			// print((char *)&VM_memory[RF[6]]);
 			break;
 		}
 		case 15: { //Remove Event Handler
+			dbg("Removo Event Handler\n");
 			remove_handler((uint8_t)RF[4], RF[5], (char *)&VM_memory[RF[6]]);
 			break;
 		}
 		
 		case 16: { //Register new movement
+			dbg("Remove new Movement\n");
 			register_handler(1, (uintptr_t)RF[5], "ENCD", 0, 0); //--------$5 a1
 			if (RF[6]) { //If should start now --------$6 a2
 				hal_call(RF[7],"MOVM"); //--------$7 a3
@@ -85,6 +95,7 @@ uint8_t syscall(uint8_t trap_code)
 		}
 		
 		case 17: { //Remove movement e registers next
+			dbg("Remove new Movement AND registers next\n");
 			remove_handler(1, RF[5], "ENCD");// --------$5 a1
 			hal_call(RF[6],"MOVM"); //Sets next movement --------$6 a2
 			hal_call(7,"ENCD"); //Set threshold --------%4 a0
@@ -95,6 +106,7 @@ uint8_t syscall(uint8_t trap_code)
 		}
 		#if HAS_ENCODER		
 		case 18: { // Hold for movement
+			dbg("Hold for movement\n");
 			encd_movdone = RF[4];
 			return 2;
 			break;

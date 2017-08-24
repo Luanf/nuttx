@@ -55,6 +55,7 @@
 #include "aes.h"
 
 #include <TM.h>
+#include <vm.h>
 
 #define BLINKY_ACTIVITY    10
 #define BLINKY_TIM          6
@@ -317,7 +318,11 @@ static int my_setup(struct device *dev)
     adc_devinit();
     enable_TH02(3, 64);
     
+    printf("Before TM\n");
     tm_init();
+    printf("Before VM_cpu\n");
+    while(vm_cpu() != 1);
+    printf("After VM_cpu\n");
 
     gpio_direction_out(GPIO_MODS_LED_DRV_3, LED_OFF);
     gpio_direction_out(GPIO_MYGPIO2, 0);

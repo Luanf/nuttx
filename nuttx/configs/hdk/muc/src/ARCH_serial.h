@@ -27,6 +27,7 @@ extern "C" {
 
 #include <stdio.h>
 #include <stdint.h>
+#include <nuttx/greybus/debug.h>
 
 #define BUFFER_SZ 2
 	

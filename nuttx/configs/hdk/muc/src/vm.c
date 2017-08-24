@@ -32,10 +32,12 @@ extern "C" {
 // -brick
 #include "EH.h"
 #include "HAL.h"
+#include <nuttx/greybus/debug.h>
 
-#ifndef DEBUGGING
-#define DEBUGGING 0
-#endif
+
+//#ifndef DEBUGGING
+#define DEBUGGING 1
+//#endif
 
 #include <stdio.h>
 #if DEBUGGING
@@ -75,7 +77,7 @@ uint32_t hand_addr;
 /* Floating-Point Unit condition code flags. */
 // uint8_t fpu_cc = 0;
 /* VM memory vector. */
-uint8_t VM_memory[VM_MEMORY_SZ] = {};
+uint8_t VM_memory[VM_MEMORY_SZ] = {36, 2, 0, 11, 0, 0, 0, 12, 36, 2, 0, 9, 36, 3, 0, 36, 0, 0, 0, 12, 12, 0, 0, 62, 0, 0, 0, 0, 36, 2, 0, 10, 0, 0, 0, 12, 36, 2, 0, 11, 0, 0, 0, 12, 0, 128, 0, 8, 36, 31, 0, 52, 36, 2, 0, 10, 0, 0, 0, 12, 36, 2, 0, 12, 36, 3, 0, 10, 60, 12, 0, 0, 37, 140, 1, 40, 0, 0, 0, 12, 3, 224, 0, 8, 0, 0, 0, 0, 36, 2, 0, 12, 36, 3, 0, 11, 60, 12, 0, 0, 37, 140, 1, 40, 0, 0, 0, 12, 3, 224, 0, 8, 0, 0, 0, 0, 36, 2, 0, 12, 36, 3, 0, 12, 60, 12, 0, 0, 37, 140, 1, 40, 0, 0, 0, 12, 3, 224, 0, 8, 0, 0, 0, 0, 36, 2, 0, 12, 36, 3, 0, 13, 60, 12, 0, 0, 37, 140, 1, 40, 0, 0, 0, 12, 3, 224, 0, 8, 0, 0, 0, 0, 36, 2, 0, 12, 36, 3, 0, 14, 60, 12, 0, 0, 37, 140, 1, 40, 0, 0, 0, 12, 3, 224, 0, 8, 0, 0, 0, 0, 36, 2, 0, 13, 0, 0, 0, 12, 3, 224, 0, 8, 0, 0, 0, 0, 36, 2, 0, 14, 0, 0, 0, 12, 3, 224, 0, 8, 0, 0, 0, 0, 36, 2, 0, 15, 0, 0, 0, 12, 3, 224, 0, 8, 0, 0, 0, 0, 39, 189, 255, 232, 175, 191, 0, 20, 60, 1, 0, 0, 12, 0, 0, 43, 36, 36, 1, 28, 143, 191, 0, 20, 36, 2, 0, 0, 3, 224, 0, 8, 39, 189, 0, 24, 72, 101, 108, 108, 111, 32, 119, 111, 114, 108, 100, 0, 82, 88, 84, 88, 0};
 
 uint32_t PC = 0;
 uint32_t nPC = 4;
@@ -127,6 +129,7 @@ char* my_itoa(uint32_t val, uint32_t base)
 
 int8_t vm_cpu(void)
 {
+	dbg("INSIDE VM CPU");
 	if(halted) return 1;
 	// if(held) return 2;
 
@@ -153,8 +156,8 @@ int8_t vm_cpu(void)
 
 // -brick
 // #if DEBUGGING
-// 	fprintf(stderr, "\n>> instr: %s\n", my_itoa(instr, 2));
-// 	fprintf(stderr, ">> op=0x%x rs=0x%x rt=0x%x rd=0x%x immediate=0x%x address=0x%x\n", op, rs, rt, rd, immediate, address);
+// 	dbg("\n>> instr: %s\n", my_itoa(instr, 2));
+// 	dbg(">> op=0x%x rs=0x%x rt=0x%x rd=0x%x immediate=0x%x address=0x%x\n", op, rs, rt, rd, immediate, address);
 // #endif
 
 	offset = 4; //default offset for non-branching instructions
@@ -168,7 +171,7 @@ int8_t vm_cpu(void)
 			switch (funct) {
 				/*case 0b000001: { // movf rd, rs, cc (value = 0) and movt rd, rs, cc (value = 1)
 #if DEBUGGING
-					fprintf(stderr, "movf/movt\n");
+					dbg("movf/movt\n");
 #endif
 					uint8_t cc = (instr >> 18) & 0x7;
 					uint8_t value = ((instr >> 16) & 0x3) << cc;
@@ -180,42 +183,42 @@ int8_t vm_cpu(void)
 				}*/
 				case 0b001011: { // movn	001011 				if(rt!=0) rd = rs
 #if DEBUGGING
-					fprintf(stderr, "movn\n");
+					dbg("movn\n");
 #endif
 					if (RF[rt] != 0) RF[rd] = RF[rs];
 					break;
 				}
 				case 0b001010: { // movz	001010 				if(rt==0) rd = rs
 #if DEBUGGING
-					fprintf(stderr, "movz\n");
+					dbg("movz\n");
 #endif
 					if (RF[rt] == 0) RF[rd] = RF[rs];
 					break;
 				}
 				case 0b100000: { // add		100000	ArithLog	$d = $s + $t
 #if DEBUGGING
-					fprintf(stderr, "add\n");
+					dbg("add\n");
 #endif
 					RF[rd] = RF[rs] + RF[rt];
 					break;
 				}
 				case 0b100001: { // addu	100001	ArithLog	$d = $s + $t
 #if DEBUGGING
-					fprintf(stderr, "addu\n");
+					dbg("addu\n");
 #endif
 					RF[rd] = RF[rs] + RF[rt];
 					break;
 				}
 				case 0b100100: { // and		100100	ArithLog	$d = $s & $t
 #if DEBUGGING
-					fprintf(stderr, "and\n");
+					dbg("and\n");
 #endif
 					RF[rd] = RF[rs] & RF[rt];
 					break;
 				}
 				case 0b011010: { // div		011010  DivMult		lo = $s / $t; hi = $s % $t
 #if DEBUGGING
-					fprintf(stderr, "div\n");
+					dbg("div\n");
 #endif
 					LO = RF[rs] / RF[rt];
 					HI = RF[rs] % RF[rt];
@@ -223,7 +226,7 @@ int8_t vm_cpu(void)
 				}
 				case 0b011011: { // divu	011011  DivMult		lo = $s / $t; hi = $s % $t
 #if DEBUGGING
-					fprintf(stderr, "divu\n");
+					dbg("divu\n");
 #endif
 					LO = RF[rs] / RF[rt];
 					HI = RF[rs] % RF[rt];
@@ -231,7 +234,7 @@ int8_t vm_cpu(void)
 				}
 				case 0b011000: { // mult	011000  DivMult		hi:lo = $s * $t
 #if DEBUGGING
-					fprintf(stderr, "mult\n");
+					dbg("mult\n");
 #endif
 					uint64_t mult = (uint64_t)RF[rs] * (uint64_t) RF[rt];
 					HI = (mult >> 32) & 0xFFFFFFFF;
@@ -240,7 +243,7 @@ int8_t vm_cpu(void)
 				}
 				case 0b011001: { // multu	011001	DivMult		hi:lo = $s * $t
 #if DEBUGGING
-					fprintf(stderr, "multu\n");
+					dbg("multu\n");
 #endif
 					uint64_t mult = (uint64_t)RF[rs] * (uint64_t) RF[rt];
 					HI = (mult >> 32) & 0xFFFFFFFF;
@@ -249,35 +252,35 @@ int8_t vm_cpu(void)
 				}
 				case 0b100111: { // nor		100111	ArithLog	$d = ~($s | $t)
 #if DEBUGGING
-					fprintf(stderr, "nor\n");
+					dbg("nor\n");
 #endif
 					RF[rd] = ~(RF[rs] | RF[rt]);
 					break;
 				}
 				case 0b100101: { // or		100101	ArithLog	$d = $s | $t
 #if DEBUGGING
-					fprintf(stderr, "or\n");
+					dbg("or\n");
 #endif
 					RF[rd] = RF[rs] | RF[rt];
 					break;
 				}
 				case 0b000000: { // sll		000000	Shift		$d = $t << a
 #if DEBUGGING
-					fprintf(stderr, "sll\n");
+					dbg("sll\n");
 #endif
 					RF[rd] = RF[rt] << shamt;
 					break;
 				}
 				case 0b000100: { // sllv	000100	ShiftV		$d = $t << $s
 #if DEBUGGING
-					fprintf(stderr, "sllv\n");
+					dbg("sllv\n");
 #endif
 					RF[rd] = RF[rt] << RF[rs];
 					break;
 				}
 				case 0b000011: { // sra		000011	Shift		$d = $t >> a 
 #if DEBUGGING
-					fprintf(stderr, "sra\n");
+					dbg("sra\n");
 #endif
 					if ((int32_t)RF[rt] < 0 && shamt > 0)
 				        RF[rd] = (int32_t)RF[rt] | ~(~0U >> shamt);
@@ -287,63 +290,63 @@ int8_t vm_cpu(void)
 				}
 				case 0b000111: { // srav	000111	ShiftV		$d = $t >> $s
 #if DEBUGGING
-					fprintf(stderr, "srav\n");
+					dbg("srav\n");
 #endif
 					RF[rd] = RF[rt] >> RF[rs];
 					break;
 				}
 				case 0b000010: { // srl		000010	Shift		$d = $t >>> a
 #if DEBUGGING
-					fprintf(stderr, "srl\n");
+					dbg("srl\n");
 #endif
 					RF[rd] = RF[rt] >> shamt;
 					break;
 				}
 				case 0b000110: { // srlv	000110	ShiftV		$d = $t >>> $s
 #if DEBUGGING
-					fprintf(stderr, "srlv\n");
+					dbg("srlv\n");
 #endif
 					RF[rd] = RF[rt] >> RF[rs];  
 					break;
 				}
 				case 0b100010: { // sub		100010	ArithLog	$d = $s - $t
 #if DEBUGGING
-					fprintf(stderr, "sub\n");
+					dbg("sub\n");
 #endif
 					RF[rd] = RF[rs] - RF[rt];  
 					break;
 				}
 				case 0b100011: { // subu	100011	ArithLog	$d = $s - $t
 #if DEBUGGING
-					fprintf(stderr, "subu\n");
+					dbg("subu\n");
 #endif
 					RF[rd] = RF[rs] - RF[rt];    
 					break;
 				}
 				case 0b100110: { // xor		100110  ArithLog	$d = $s ^ $t
 #if DEBUGGING
-					fprintf(stderr, "xor\n");
+					dbg("xor\n");
 #endif
 					RF[rd] = RF[rs] ^ RF[rt];    
 					break;
 				}
 				case 0b101010: { // slt		101010	ArithLog	$d = ($s < $t)
 #if DEBUGGING
-					fprintf(stderr, "slt\n");
+					dbg("slt\n");
 #endif
 					RF[rd] = (RF[rs] < RF[rt])?1:0;
 					break;
 				}
 				case 0b101011: { // sltu	101011	ArithLog	$d = ($s < $t)
 #if DEBUGGING
-					fprintf(stderr, "sltu\n");
+					dbg("sltu\n");
 #endif
 					RF[rd] = (RF[rs] < RF[rt])?1:0;
 					break;
 				}
 				case 0b001001: { // jalr	001001	JumpR		$31 = pc; pc = $s
 #if DEBUGGING
-					fprintf(stderr, "jalr\n");
+					dbg("jalr\n");
 #endif
 					RF[31] = PC+8;
 					PC = nPC;
@@ -352,7 +355,7 @@ int8_t vm_cpu(void)
 				}
 				case 0b001000: { // jr		001000	JumpR		pc = $s 
 #if DEBUGGING
-					fprintf(stderr, "jr\n");
+					dbg("jr\n");
 #endif
 					PC = nPC;
 					nPC = RF[rs];
@@ -360,35 +363,35 @@ int8_t vm_cpu(void)
 				}
 				case 0b010000: { // mfhi	010000	MoveFrom	$d = hi
 #if DEBUGGING
-					fprintf(stderr, "mfhi\n");
+					dbg("mfhi\n");
 #endif
 					RF[rd] = HI;
 					break;
 				}
 				case 0b010010: { // mflo	010010	MoveFrom	$d = lo
 #if DEBUGGING
-					fprintf(stderr, "mflo\n");
+					dbg("mflo\n");
 #endif
 					RF[rd] = LO;
 					break;
 				}
 				case 0b010001: { // mthi	010001	MoveTo		hi = $s
 #if DEBUGGING
-					fprintf(stderr, "mthi\n");
+					dbg("mthi\n");
 #endif
 					HI = RF[rs];
 					break;
 				}
 				case 0b010011: { // mtlo	010011	MoveTo		lo = $s
 #if DEBUGGING
-					fprintf(stderr, "mtlo\n");
+					dbg("mtlo\n");
 #endif
 					LO = RF[rs];
 					break;
 				}
 				case 0b001100: { // syscall 	001100	syscall		$2		seen on the .s generated by the ecc compiler
 #if DEBUGGING
-					fprintf(stderr, "syscall\n");
+					dbg("syscall\n");
 #endif
 // -brick
 // #if MEASURING
@@ -426,7 +429,7 @@ int8_t vm_cpu(void)
 				}	
 				default: {
 					//TODO: throw an error
-					printf(">> Unimplemented instruction (op=0x%x, rs=0x%x, rt=0x%x, rd=0x%x, immediate=0x%x, PC: 0x%x).\n", op, rs, rt, rd, immediate, PC);
+					dbg(">> Unimplemented instruction (op=0x%x, rs=0x%x, rt=0x%x, rd=0x%x, immediate=0x%x, PC: 0x%x).\n", op, rs, rt, rd, immediate, PC);
 					return -1;
 				}
 			}      
@@ -436,28 +439,28 @@ int8_t vm_cpu(void)
 		//Immediate encoding
 		case 0b001000: { //addi    001000  ArithLogI       $t = $s + SE(i)
 #if DEBUGGING
-			fprintf(stderr, "addi\n");
+			dbg("addi\n");
 #endif
 			RF[rt] = RF[rs] + immediate; //Implementar trap!
 			break;
 		}
 		case 0b001001: { //addiu   001001  ArithLogI       $t = $s + SE(i)
 #if DEBUGGING
-			fprintf(stderr, "addiu\n");
+			dbg("addiu\n");
 #endif
 			RF[rt] = (RF[rs] + immediate);
 			break;
 		}
 		case 0b001100: { //andi    001100  ArithLogI       $t = $s & ZE(i)
 #if DEBUGGING
-			fprintf(stderr, "andi\n");
+			dbg("andi\n");
 #endif
 		    RF[rt] = RF[rs] & (uint32_t)immediate;
 			break;
 		}
 		case 0b001101: { //ori     001101  ArithLogI       $t = $s | ZE(i)
 #if DEBUGGING
-			fprintf(stderr, "ori\n");
+			dbg("ori\n");
 #endif
 			//RF[rt] = RF[rs] | (uint32_t)immediate;
 			RF[rt] = RF[rs] | (((uint32_t)immediate) & 0xFFFF);
@@ -465,7 +468,7 @@ int8_t vm_cpu(void)
 		}
 		case 0b001110: { //xori    001110  ArithLogI       $d = $s ^ ZE(i)
 #if DEBUGGING
-			fprintf(stderr, "xori\n");
+			dbg("xori\n");
 #endif
 			RF[rd] = RF[rs] ^ (uint32_t)immediate;
 			break;
@@ -474,14 +477,14 @@ int8_t vm_cpu(void)
 		case 0b011001: { //lhi     011001  LoadI   HH ($t) = i 
 		  	//RF[rt] = ((uint32_t)immediate) << 16;
 #if DEBUGGING
-			fprintf(stderr, "lui/lhi\n");
+			dbg("lui/lhi\n");
 #endif
 		  	RF[rt] = (((uint32_t)immediate) & 0xFFFF) << 16;
 			break;
 		}
 		case 0b011000: { //llo     011000  LoadI   LH ($t) = i
 #if DEBUGGING
-			fprintf(stderr, "llo\n");
+			dbg("llo\n");
 #endif
 		  	//RF[rt] = immediate;
 		  	RF[rt] = ((uint32_t)immediate) & 0xFFFF;
@@ -489,14 +492,14 @@ int8_t vm_cpu(void)
 		}
 		case 0b001010: { //slti    001010  ArithLogI       $t = ($s < SE(i))
 #if DEBUGGING
-			fprintf(stderr, "slti\n");
+			dbg("slti\n");
 #endif
 		  	RF[rt] = ((signed)RF[rs] < immediate)?1:0;
 			break;
 		}
 		case 0b001011: { //sltiu   001011  ArithLogI       $t = ($s < SE(i)) 
 #if DEBUGGING
-			fprintf(stderr, "sltiu\n");
+			dbg("sltiu\n");
 #endif
 			RF[rt] = (RF[rs] < (unsigned)immediate)?1:0;
 			break;
@@ -505,7 +508,7 @@ int8_t vm_cpu(void)
 			if (RF[rt] == 0b00001) //bgez Rsrc, offset: Branch on Greater Than Equal Zero
 			{
 #if DEBUGGING
-			fprintf(stderr, "bgez\n");
+			dbg("bgez\n");
 #endif
 				if ((int32_t)RF[rs] >= 0)
 				{
@@ -520,7 +523,7 @@ int8_t vm_cpu(void)
 			else if (RF[rt] == 0b10001) //bgezal Rsrc, offset: Branch on Greater Than Equal Zero And Link
 			{
 #if DEBUGGING
-				fprintf(stderr, "bgezal\n");
+				dbg("bgezal\n");
 #endif
 				if ((int32_t)RF[rs] >= 0)
 				{
@@ -536,7 +539,7 @@ int8_t vm_cpu(void)
 			else if (RF[rt] == 0b00000) //bltz Rsrc, offset: Branch on Less Than Zero
 			{
 #if DEBUGGING
-				fprintf(stderr, "bltz\n");
+				dbg("bltz\n");
 #endif
 				if ((int32_t)RF[rs] < 0)
 				{
@@ -551,7 +554,7 @@ int8_t vm_cpu(void)
 			else if (RF[rt] == 0b10000) //bltzal Rsrc, offset: Branch on Less Than And Link
 			{
 #if DEBUGGING
-				fprintf(stderr, "bltzal\n");
+				dbg("bltzal\n");
 #endif
 				if ((int32_t)RF[rs] < 0)
 				{
@@ -568,7 +571,7 @@ int8_t vm_cpu(void)
 		}
 		case 0b000100: { //beq     000100  Branch  if ($s == $t) pc += i << 2
 #if DEBUGGING
-			fprintf(stderr, "beq\n");
+			dbg("beq\n");
 #endif
 			if (RF[rs] == RF[rt])
 			{
@@ -583,7 +586,7 @@ int8_t vm_cpu(void)
 		}
 		case 0b000111: { //bgtz    000111  BranchZ if ($s > 0) pc += i << 2
 #if DEBUGGING
-			fprintf(stderr, "bgtz\n");
+			dbg("bgtz\n");
 #endif
 			if ((int32_t)RF[rs] > 0)
 			{
@@ -598,7 +601,7 @@ int8_t vm_cpu(void)
 		}
 		case 0b000110: { //blez    000110  BranchZ if ($s <= 0) pc += i << 2
 #if DEBUGGING
-			fprintf(stderr, "blez\n");
+			dbg("blez\n");
 #endif
 			if ((int32_t)RF[rs] <= 0)
 			{
@@ -613,8 +616,8 @@ int8_t vm_cpu(void)
 		}
 		case 0b000101: { //bne     000101  Branch  if ($s != $t) pc += i << 2
 #if DEBUGGING
-			fprintf(stderr, "bne\n");
-			fprintf(stderr, ">>RA:%x\tAddress:%x\n", RF[31], immediate<<2);
+			dbg("bne\n");
+			dbg(">>RA:%x\tAddress:%x\n", RF[31], immediate<<2);
 #endif
 			if (RF[rs] != RF[rt])
 			{
@@ -629,35 +632,35 @@ int8_t vm_cpu(void)
 		}
 		case 0b100000: { //lb      100000  LoadStore       $t = SE (MEM [$s + i]:1)
 #if DEBUGGING
-			fprintf(stderr, "lb\n");
+			dbg("lb\n");
 #endif
 		  	RF[rt] = ((uint32_t)VM_memory[RF[rs] + immediate] & 0x7F)  | (uint32_t)(VM_memory[RF[rs] + immediate] & 0x80)<<24; //Load byte carrying signal to the register
 			break;
 		}
 		case 0b100100: { //lbu     100100  LoadStore       $t = ZE (MEM [$s + i]:1)
 #if DEBUGGING
-			fprintf(stderr, "lbu\n");
+			dbg("lbu\n");
 #endif
 		  	RF[rt] = ((uint32_t)VM_memory[RF[rs] + immediate]) & 0xFF;
 			break;
 		}
 		case 0b100001: { //lh      100001  LoadStore       $t = SE (MEM [$s + i]:2)
 #if DEBUGGING
-			fprintf(stderr, "lh\n");
+			dbg("lh\n");
 #endif
 		  	RF[rt] = ((((uint32_t)(VM_memory[RF[rs] + immediate])<< 16) | ((uint32_t)VM_memory[RF[rs] + immediate + 1])) & 0x7FFF) | (uint32_t)((VM_memory[RF[rs] + immediate + 1]) & 0x8000) << 16;
 			break;
 		}
 		case 0b100101: { //lhu     100101  LoadStore       $t = ZE (MEM [$s + i]:2)
 #if DEBUGGING
-			fprintf(stderr, "lhu\n");
+			dbg("lhu\n");
 #endif
 			RF[rt] = ((((uint32_t)(VM_memory[RF[rs] + immediate])<<16) | ((uint32_t)VM_memory[RF[rs] + immediate + 1])) & 0xFFFF);
 			break;
 		}
 		case 0b100011: { //lw      100011  LoadStore       $t = MEM [$s + i]:4
 #if DEBUGGING
-			fprintf(stderr, "lw\n");
+			dbg("lw\n");
 #endif
 		  	RF[rt] = ((uint32_t)(VM_memory[RF[rs] + immediate + 0]) << 24) |
 		  			 ((uint32_t)(VM_memory[RF[rs] + immediate + 1]) << 16) |
@@ -667,14 +670,14 @@ int8_t vm_cpu(void)
 		}
 		case 0b101000: { //sb      101000  LoadStore       MEM [$s + i]:1 = LB ($t)
 #if DEBUGGING
-			fprintf(stderr, "sb\n");
+			dbg("sb\n");
 #endif
 		  	VM_memory[RF[rs] + immediate] = (uint8_t)(RF[rt] & 0xFF);
 			break;
 		}
 		case 0b101001: { //sh      101001  LoadStore       MEM [$s + i]:2 = LH ($t)
 #if DEBUGGING
-			fprintf(stderr, "sh\n");
+			dbg("sh\n");
 #endif
 		  	VM_memory[RF[rs] + immediate] = (uint8_t)((RF[rt] & 0xFF00) >> 8);
 			VM_memory[RF[rs] + immediate + 1] = (uint8_t)(RF[rt] & 0xFF);
@@ -682,7 +685,7 @@ int8_t vm_cpu(void)
 		}
 		case 0b101011: { //sw      101011  LoadStore       MEM [$s + i]:4 = $t
 #if DEBUGGING
-			fprintf(stderr, "sw\n");
+			dbg("sw\n");
 #endif
 		  	VM_memory[RF[rs] + immediate + 0] = (uint8_t)((RF[rt] & 0xFF000000) >> 24);
 			VM_memory[RF[rs] + immediate + 1] = (uint8_t)((RF[rt] & 0x00FF0000) >> 16);
@@ -695,7 +698,7 @@ int8_t vm_cpu(void)
 		
 		case 0b000010: { //j       000010  Jump    pc = i << 2
 #if DEBUGGING
-			fprintf(stderr, "j\n");
+			dbg("j\n");
 #endif
 			PC = nPC;
 			nPC = address << 2;
@@ -703,7 +706,7 @@ int8_t vm_cpu(void)
 		}
 		case 0b000011: { //jal     000011  Jump    $31 = pc; pc = i << 2
 #if DEBUGGING
-			fprintf(stderr, "jal\n");
+			dbg("jal\n");
 #endif
 			RF[31] = PC + 8;
 			PC = nPC;
@@ -712,7 +715,7 @@ int8_t vm_cpu(void)
 		}
 		case 0b011010: { //trap    011010  Trap    Dependent on operating system; different values for immed26 specify different operations. See the list of traps for information on what the different trap codes do.
 #if DEBUGGING
-			fprintf(stderr, "trap\n");
+			dbg("trap\n");
 #endif
 			syscall((uint8_t)(address&0xFF));
 			break;
@@ -720,7 +723,7 @@ int8_t vm_cpu(void)
 
 		case 0b101010: { //swl Rsrc1, imm(Rsrc2): Store Word Left
 #if DEBUGGING
-			fprintf(stderr, "swl\n");
+			dbg("swl\n");
 #endif
 			VM_memory[RF[rs] + immediate] = (uint8_t)((RF[rt] & 0xFF000000) >> 24);
 			VM_memory[RF[rs] + immediate + 1] = (uint8_t)((RF[rt] & 0xFF0000) >> 16);
@@ -728,7 +731,7 @@ int8_t vm_cpu(void)
 		}
 		case 0b101110: { //swr Rsrc1, imm(Rsrc2): Store Word Right
 #if DEBUGGING
-			fprintf(stderr, "swr\n");
+			dbg("swr\n");
 #endif
 		  	VM_memory[RF[rs] + immediate] = (uint8_t)(RF[rt] & 0xFF);
 			VM_memory[RF[rs] + immediate - 1] = (uint8_t)(RF[rt] & 0xFF00) >> 8;
@@ -736,14 +739,14 @@ int8_t vm_cpu(void)
 		}
 		case 0b100010: { //lwl Rdest, imm(Rsrc): Load Word Left
 #if DEBUGGING
-			fprintf(stderr, "lwl\n");
+			dbg("lwl\n");
 #endif
 			RF[rt] = ((uint32_t)(VM_memory[RF[rs] + immediate]) << 24) | ((uint32_t)(VM_memory[RF[rs] + immediate + 1]) << 16);
 			break;
 		}
 		case 0b100110: { //lwr Rdest, imm(Rsrc): Load Word Right
 #if DEBUGGING
-			fprintf(stderr, "lwr\n");
+			dbg("lwr\n");
 #endif
 			RF[rt] = ((uint32_t)(VM_memory[RF[rs] + immediate -1]) << 8) | ((uint32_t)VM_memory[RF[rs] + immediate]);
 			break;

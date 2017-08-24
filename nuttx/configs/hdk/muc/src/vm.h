@@ -38,7 +38,7 @@ extern "C" {
  * 	Update the define below!
  *    ~80kB free
  */
-#define PROCESSOR_MEMORY_SZ 1024 * 16
+#define PROCESSOR_MEMORY_SZ 1024 * 4
 // #define PROCESSOR_MEMORY_SZ 1024 * 512 /* */
 #define VM_MEMORY_SZ PROCESSOR_MEMORY_SZ /* Available memory from the microprocessor  */
 /* Register file. */

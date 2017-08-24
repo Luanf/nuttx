@@ -162,6 +162,7 @@ void tm_init(void) {
     
    }
 
+   dbg("FINISHED TM INIT!");
 }
   
 #ifdef __cplusplus

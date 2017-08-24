@@ -29,6 +29,8 @@ extern "C" {
 
 #include <stdio.h>
 #include <stdutils.h>
+#include <nuttx/greybus/debug.h>
+	
 
 uint32_t ehvec[EHVECSZ] = {0};
 uint8_t vec_size = 0;
@@ -50,6 +52,8 @@ void eh_init(void)
 		ehvecpointers[i].pos = 0;
 		ehvecpointers[i].sz = 0;
 	}
+
+	dbg("FINISHED EH INIT");
 	/*---------------------------------*/
 }
 
