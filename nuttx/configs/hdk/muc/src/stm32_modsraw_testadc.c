@@ -27,12 +27,13 @@
  */
 
 // interval 
+
 #include <errno.h>
 #include <debug.h>
 #include <fcntl.h>
 #include <stdlib.h>
 #include <stdio.h>
-#include <string.h>
+//#include <string.h>
 #include <unistd.h>
 #include <sys/ioctl.h>
 #include <arch/byteorder.h>
@@ -56,6 +57,8 @@
 
 #include <TM.h>
 #include <vm.h>
+#include <EH.c>
+#include <string.h>
 
 #define BLINKY_ACTIVITY    10
 #define BLINKY_TIM          6
@@ -80,7 +83,8 @@ static const uint32_t g_pinlist[ADC1_NCHANNELS]  = {GPIO_ADC1_IN4};
 #endif
 
 static struct work_s data_report_work; /* work queue for data reporting */
-
+static struct work_s vm_work;
+static struct work_s events_generator;
 
 
 #define TEMP_RAW_NAME     "TEMPERATURE"
@@ -312,17 +316,71 @@ static int my_unregister_callback(struct device *dev)
     return 0;
 }
 
+static void vm_worker(void *arg) /*consumes*/
+{
+    struct temp_raw_info *info = NULL;
+
+    info = arg;
+
+    if(consume_event() == 1){
+        dbg("Event Consumed!\n");
+    }
+    else{
+        dbg("No events to consume...\n");
+    }
+    if (!work_available(&vm_work))
+        work_cancel(LPWORK, &vm_work);
+
+    /* schedule work */
+    work_queue(LPWORK, &vm_work, vm_worker, info, MSEC2TICK(10000));
+
+    return;
+}
+
+static void event_generator(void *arg)
+{
+    struct temp_raw_info *info = NULL;
+
+    info = arg;
+
+    if (!work_available(&events_generator))
+        work_cancel(LPWORK, &events_generator);
+
+    if (insert_event(1, "TEST") == 1){
+        dbg("Event inserted!\n");
+    }
+    else{
+        dbg("Not enough room to insert event!\n");
+    }
+
+    /* schedule work */
+    work_queue(LPWORK, &events_generator, event_generator, info, MSEC2TICK(5000));
+
+    return;
+}
+
 static int my_setup(struct device *dev)
 {
     dbg("Running on Setup...24\n");
     adc_devinit();
     enable_TH02(3, 64);
     
-    printf("Before TM\n");
+    //printf("Before TM\n");
     tm_init();
-    printf("Before VM_cpu\n");
+    //printf("After TM\n");
+
+    //printf("First VMcpu call\n");
+    vm_init(0);
     while(vm_cpu() != 1);
-    printf("After VM_cpu\n");
+    //printf("After first VMcpu call\n");
+
+    /* schedule vm worker - consumer */
+    struct temp_raw_info *info_for_vm = NULL;
+    info_for_vm = device_get_private(dev);
+    work_queue(LPWORK, &vm_work, vm_worker, info_for_vm, 0);
+    /* schedule vm worker - events generator */
+    work_queue(LPWORK, &events_generator, event_generator, info_for_vm, 0);
+
 
     gpio_direction_out(GPIO_MODS_LED_DRV_3, LED_OFF);
     gpio_direction_out(GPIO_MYGPIO2, 0);

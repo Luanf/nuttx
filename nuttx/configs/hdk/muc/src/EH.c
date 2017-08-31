@@ -27,8 +27,9 @@ extern "C" {
 #include <vm.h>
 #include <HAL.h>
 
-#include <stdio.h>
-#include <stdutils.h>
+//#include <stdio.h>
+//#include <stdutils.h>
+	#include <string.h>
 #include <nuttx/greybus/debug.h>
 	
 
@@ -223,6 +224,7 @@ int8_t insert_event(uint8_t event_id, char * evname)
 
 int8_t consume_event(void) //TODO:For some reason i cannot print from inside this func
 {
+	dbg(" THE MISTERIOUS CONSUME_EVENT FUNCTION HAS NOW BEGUN ");
 	if (queue_size > 0) //Has something
 	{
 		register int8_t selected;
@@ -246,7 +248,8 @@ int8_t consume_event(void) //TODO:For some reason i cannot print from inside thi
 		{
 			RF[4] = ehvec[loop];
 			vm_init(hand_addr);
-			vm_cpu();
+			dbg("lets enter vm cpu for an event\n");
+			while(vm_cpu() != 1);
 		}
 		return 1; // Success
 	}
