@@ -79,7 +79,7 @@ uint8_t syscall(uint8_t trap_code)
 			break;
 		}
 		case 15: { //Remove Event Handler
-			dbg("Removo Event Handler\n");
+			dbg("Remove Event Handler\n");
 			remove_handler((uint8_t)RF[4], RF[5], (char *)&VM_memory[RF[6]]);
 			break;
 		}

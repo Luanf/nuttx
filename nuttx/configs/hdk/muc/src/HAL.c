@@ -26,8 +26,9 @@ extern "C" {
 #include "HAL.h"
 #include "vm.h"
 #include <stdutils.h>
+#include <nuttx/greybus/debug.h>
+#include <ARCH_serial.h>	
 
-#include <stdio.h>
 
 uint8_t hal_call(uint32_t sensid, char identifier[])//Call to hardware I/O
 {
@@ -47,7 +48,7 @@ uint8_t hal_call(uint32_t sensid, char identifier[])//Call to hardware I/O
 	}
 	else if (!strcmp(identifier,"RXTX"))
 	{
-		//
+		print((char *)&VM_memory[RF[4]]);
 	}
 	else if (!strcmp(identifier,"MOVM"))
 	{

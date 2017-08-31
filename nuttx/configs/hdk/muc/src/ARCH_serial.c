@@ -41,7 +41,8 @@ void printnum(uint32_t number)
 
 void print(const char *str)
 {
-	dbg("%s", str);
+	dbg("%s\n", str);
+	printf("COISA SAYS: %s\n", str);
 }
 	
 #ifdef __cplusplus
